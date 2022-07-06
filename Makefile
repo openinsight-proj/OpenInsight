@@ -6,7 +6,7 @@ OTELCOL=./dist/otelcol-contrib
 
 # Images management
 REGISTRY_SERVER_ADDRESS?=ghcr.io
-REGISTRY?=$(REGISTRY_SERVER_ADDRESS)/openinsight
+REGISTRY?=ghcr.io
 REGISTRY_USER_NAME?=
 REGISTRY_PASSWORD?=
 TAG ?= latest
