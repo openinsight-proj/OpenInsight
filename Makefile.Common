@@ -1,0 +1,27 @@
+GO_BUILD_TAGS=""
+GOTEST_OPT?= -race -v -timeout 300s --tags=$(GO_BUILD_TAGS)
+GOTEST=go test
+LINT=golangci-lint
+
+.DEFAULT_GOAL := common
+
+.PHONY: common
+common: lint
+
+.PHONY: test
+test:
+	$(GOTEST) $(GOTEST_OPT) ./...
+
+.PHONY: fmt
+fmt:
+	gofmt  -w -s ./
+	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+
+.PHONY: lint
+lint:
+	$(LINT) run --allow-parallel-runners
+
+.PHONY: dep
+dep:
+	go mod download
+
