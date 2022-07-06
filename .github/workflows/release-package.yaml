@@ -63,5 +63,3 @@ jobs:
         env:
           TAG: ${{ github.sha }}
         run: make build-otelcol build-otelcol-docker
-      - name: push docker images
-        run: make push-otelcol-docker
