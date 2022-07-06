@@ -52,11 +52,11 @@ endif
 	export DOCKER_CLI_EXPERIMENTAL=enabled ;\
 	docker buildx create --use --platform=$(BUILD_ARCH) --name otelcol-multi-platform-builder ;\
 	docker buildx build \
-    			--builder insight-multi-platform-builder \
+    			--builder otelcol-multi-platform-builder \
     			--platform $(BUILD_ARCH) \
     			--tag $(REGISTRY)/openinsight:$(TAG)  \
     			--tag $(REGISTRY)/openinsight:latest  \
-    			-f ./build/insight \
+    			-f ./Dockerfile \
     			--push \
     			.
 
