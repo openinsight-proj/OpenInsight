@@ -26,8 +26,8 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY_SERVER_ADDRESS: ghcr.io/jaredtan95
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY_USER_NAME: ${{ github.repository_owner }}
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_TOKEN }}
 
 jobs:
   build:
@@ -62,4 +62,4 @@ jobs:
       - name: Build and push docker images
         env:
           TAG: ${{ github.sha }}
-        run: make build-otelcol build-otelcol-docker
+        run: make build-otelcol build-push-otelcol-docker

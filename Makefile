@@ -40,12 +40,25 @@ build-otelcol-docker:
     			--tag $(REGISTRY)/openinsight:$(TAG)  \
     			--tag $(REGISTRY)/openinsight:latest  \
     			-f ./Dockerfile \
-    			--push \
     			.
 
-.PHONY: push-otelcol-docker
-push-otelcol-docker:
-	echo "push docker iamges."
+.PHONY: build-push-otelcol-docker
+build-push-otelcol-docker:
+	echo "Building otelcol for arch = $(BUILD_ARCH)"
+	echo "login ${REGISTRY_SERVER_ADDRESS}"
+ifneq ($(REGISTRY_USER_NAME), "")
+	docker login -u ${REGISTRY_USER_NAME} -p "${REGISTRY_PASSWORD}" ${REGISTRY_SERVER_ADDRESS}
+endif
+	export DOCKER_CLI_EXPERIMENTAL=enabled ;\
+	docker buildx create --use --platform=$(BUILD_ARCH) --name otelcol-multi-platform-builder ;\
+	docker buildx build \
+    			--builder insight-multi-platform-builder \
+    			--platform $(BUILD_ARCH) \
+    			--tag $(REGISTRY)/openinsight:$(TAG)  \
+    			--tag $(REGISTRY)/openinsight:latest  \
+    			-f ./build/insight \
+    			--push \
+    			.
 
 .PHONY: run-otelcol-docker
 run-otelcol-docker: build-otelcol-docker
