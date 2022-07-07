@@ -19,7 +19,7 @@ BUILD_ARCH ?= linux/$(GOARCH)
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.54.0
+	GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.55.0
 
 .PHONY: build-otelcol
 build-otelcol:
