@@ -26,13 +26,13 @@ on:
 
 env:
   # Use docker.io for Docker Hub if empty
-  REGISTRY_SERVER_ADDRESS: ghcr.io/jaredtan95
+  REGISTRY_SERVER_ADDRESS: ghcr.io/openinsight-proj
   REGISTRY_USER_NAME: ${{ github.repository_owner }}
   REGISTRY_PASSWORD: ${{ secrets.REGISTRY_TOKEN }}
 
 jobs:
   build-and-push-image:
-    if: github.repository == 'JaredTan95/openinsight'
+    if: github.repository == 'openinsight-proj/openinsight'
     runs-on: ubuntu-latest
     permissions:
       contents: read
