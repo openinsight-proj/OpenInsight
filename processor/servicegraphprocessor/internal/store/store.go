@@ -140,16 +140,22 @@ func (s *store) UpsertEdge(key string, update Callback) (bool, error) {
 		return false, nil
 	}
 
+	edge := newEdge(key, s.ttl)
+	update(edge)
+
+	if edge.isComplete() {
+		s.onComplete(edge)
+		return true, nil
+	}
+
 	// Check we can add new edges
 	if s.l.Len() >= s.maxItems {
 		// TODO: try to evict expired items
 		return false, ErrTooManyItems
 	}
 
-	edge := newEdge(key, s.ttl)
 	ele := s.l.PushBack(edge)
 	s.m[key] = ele
-	update(edge)
 
 	return true, nil
 }
