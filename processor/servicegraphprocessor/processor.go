@@ -256,7 +256,7 @@ func (p *processor) onExpire(*store.Edge) {
 
 func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
 	metricKey := p.buildMetricKey(e.SourceService, e.DestinationService, e.Dimensions)
-	dimensions := buildDimensions(e)
+	dimensions, isFailed := buildDimensions(e)
 
 	// TODO: Consider configuring server or client latency
 	duration := e.DestinationLatency
@@ -265,6 +265,9 @@ func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
 	defer p.seriesMutex.Unlock()
 	p.updateSeries(metricKey, dimensions)
 	p.updateCountMetrics(metricKey)
+	if isFailed {
+		p.updateFailedCountMetrics(metricKey)
+	}
 	p.updateDurationMetrics(metricKey, duration)
 }
 
@@ -292,6 +295,10 @@ func (p *processor) updateCountMetrics(key string) {
 	p.reqTotal[key]++
 }
 
+func (p *processor) updateFailedCountMetrics(key string) {
+	p.reqFailedTotal[key]++
+}
+
 func (p *processor) updateDurationMetrics(key string, duration float64) {
 	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
 	if _, ok := p.reqDurationSecondsBucketCounts[key]; !ok {
@@ -302,7 +309,7 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 	p.reqDurationSecondsBucketCounts[key][index]++
 }
 
-func buildDimensions(e *store.Edge) pcommon.Map {
+func buildDimensions(e *store.Edge) (pcommon.Map, bool) {
 	dims := pcommon.NewMap()
 	dims.UpsertString(sourceKey, e.SourceService)
 	dims.UpsertString(destinationKey, e.DestinationService)
@@ -310,7 +317,7 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 	for k, v := range e.Dimensions {
 		dims.UpsertString(k, v)
 	}
-	return dims
+	return dims, e.Failed
 }
 
 func (p *processor) buildMetrics() pmetric.Metrics {
@@ -351,7 +358,28 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		if !ok {
 			return fmt.Errorf("failed to find dimensions for key %s", key)
 		}
+		dimensions.UpsertBool(failedKey, false)
+		dimensions.CopyTo(dpCalls.Attributes())
+	}
 
+	for key, c := range p.reqFailedTotal {
+		mCount := ilm.Metrics().AppendEmpty()
+		mCount.SetDataType(pmetric.MetricDataTypeSum)
+		mCount.SetName("otel_traces_service_graph_request_total")
+		mCount.Sum().SetIsMonotonic(true)
+		// TODO: Support other aggregation temporalities
+		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+
+		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
+		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dpCalls.SetIntVal(c)
+
+		dimensions, ok := p.dimensionsForSeries(key)
+		if !ok {
+			return fmt.Errorf("failed to find dimensions for key %s", key)
+		}
+		dimensions.UpsertBool(failedKey, true)
 		dimensions.CopyTo(dpCalls.Attributes())
 	}
 
