@@ -72,7 +72,6 @@ type processor struct {
 
 	seriesMutex                    sync.Mutex
 	reqTotal                       map[string]int64
-	reqFailedTotal                 map[string]int64
 	reqDurationSecondsSum          map[string]float64
 	reqDurationSecondsCount        map[string]uint64
 	reqDurationBounds              []float64
@@ -104,7 +103,6 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		nextConsumer:                   nextConsumer,
 		startTime:                      time.Now(),
 		reqTotal:                       make(map[string]int64),
-		reqFailedTotal:                 make(map[string]int64),
 		reqDurationSecondsSum:          make(map[string]float64),
 		reqDurationSecondsCount:        make(map[string]uint64),
 		reqDurationBounds:              bounds,
@@ -189,26 +187,44 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 		for j := 0; j < scopeSpans.Len(); j++ {
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
+				connectionType := store.Unknown
 				span := spans.At(k)
 				switch span.Kind().String() {
+				case v1.Span_SPAN_KIND_PRODUCER.String():
+					// override connection type and continue processing as span kind client
+					connectionType = store.MessagingSystem
+					fallthrough
 				case v1.Span_SPAN_KIND_CLIENT.String():
 					traceID := span.TraceID().HexString()
 					key := buildEdgeKey(traceID, span.SpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.SourceService = serviceName
-						e.SourceLatency = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-						e.Failed = e.Failed || span.Status().Code() == 2
+						e.SourceLatency = spanDurationSec(span)
+						e.Failed = e.Failed || spanFailed(span)
 						p.upsertDimensions(sourceKey, e.Dimensions, rAttributes, span.Attributes())
+
+						// A database request will only have one span, we don't wait for the server
+						// span but just copy details from the client span
+						if dbName, ok := findAttributeValue("db.name", rAttributes, span.Attributes()); ok {
+							e.ConnectionType = store.Database
+							e.DestinationService = dbName
+							e.DestinationLatency = spanDurationSec(span)
+						}
 					})
+				case v1.Span_SPAN_KIND_CONSUMER.String():
+					// override connection type and continue processing as span kind server
+					connectionType = store.MessagingSystem
+					fallthrough
 				case v1.Span_SPAN_KIND_SERVER.String():
 					traceID := span.TraceID().HexString()
 					key := buildEdgeKey(traceID, span.ParentSpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
+						e.ConnectionType = connectionType
 						e.DestinationService = serviceName
-						e.DestinationLatency = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-						e.Failed = e.Failed || span.Status().Code() == 2
+						e.DestinationLatency = spanDurationSec(span)
+						e.Failed = e.Failed || spanFailed(span)
 						p.upsertDimensions(destinationKey, e.Dimensions, rAttributes, span.Attributes())
 					})
 				default:
@@ -334,6 +350,7 @@ func (p *processor) buildMetrics() pmetric.Metrics {
 }
 
 func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
+	// collect req total metrics
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
 		mCount.SetDataType(pmetric.MetricDataTypeSum)
@@ -415,6 +432,14 @@ func buildEdgeKey(k1, k2 string) string {
 // Note that this can return sub-millisecond (i.e. < 1ms) values as well.
 func durationToMillis(d time.Duration) float64 {
 	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+}
+
+func spanDurationSec(span ptrace.Span) float64 {
+	return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+}
+
+func spanFailed(span ptrace.Span) bool {
+	return span.Status().Code() == ptrace.StatusCodeError
 }
 
 func mapDurationsToMillis(vs []time.Duration) []float64 {
