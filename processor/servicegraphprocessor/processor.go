@@ -378,13 +378,13 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 			return fmt.Errorf("failed to find dimensions for key %s", key)
 		}
 
-		if value, ok := dimensions.Get("failed"); ok {
-			if value.AsString() == "false" {
-				fmt.Println("false")
-			} else {
-				fmt.Println("value:", value.AsString(), "=============================")
-			}
-		}
+		//if value, ok := dimensions.Get("failed"); ok {
+		//	if value.AsString() == "false" {
+		//		fmt.Println("false")
+		//	} else {
+		//		fmt.Println("value:", value.AsString(), "=============================")
+		//	}
+		//}
 		dimensions.CopyTo(dpCalls.Attributes())
 	}
 
@@ -455,9 +455,6 @@ func spanDurationSec(span ptrace.Span) float64 {
 }
 
 func spanFailed(span ptrace.Span) bool {
-	if span.Status().Code() == ptrace.StatusCodeError {
-		fmt.Println("检查到错误的span_-------------------------")
-	}
 	return span.Status().Code() == ptrace.StatusCodeError
 }
 
