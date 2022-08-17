@@ -189,6 +189,8 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 		for j := 0; j < scopeSpans.Len(); j++ {
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
+				//check Expire
+				p.store.Expire()
 				connectionType := store.Unknown
 				span := spans.At(k)
 				switch span.Kind().String() {

@@ -16,6 +16,11 @@ package servicegraphprocessor
 
 import (
 	"context"
+	"fmt"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"net"
 	"testing"
 	"time"
 
@@ -98,6 +103,67 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Verify
 	assert.NoError(t, err)
+}
+
+type TracesReceiver struct {
+	srv *grpc.Server
+	p   *processor
+}
+
+func (r *TracesReceiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+	fmt.Println("span count:", req.Traces().SpanCount())
+	r.p.ConsumeTraces(context.Background(), req.Traces())
+	return ptraceotlp.NewResponse(), nil
+}
+
+func GRPCServer() *TracesReceiver {
+	cfg := &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+	}
+	pro, err := newProcessor(zap.NewExample(), cfg, consumertest.NewNop())
+	if err != nil {
+		return nil
+	}
+
+	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error {
+		return nil
+	})
+
+	mHost := &mockHost{
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.MetricsDataType: {
+					config.NewComponentID("mock"): mockMetricsExporter,
+				},
+			}
+		},
+	}
+	pro.Start(context.Background(), mHost)
+
+	rcv := &TracesReceiver{
+		srv: grpc.NewServer(),
+		p:   pro,
+	}
+	ptraceotlp.RegisterServer(rcv.srv, rcv)
+	return rcv
+}
+
+func otel_grpc_receiver() {
+	ln, err := net.Listen("tcp", "0.0.0.0:4317")
+	if err != nil {
+		return
+	}
+	rcv := GRPCServer()
+	err = rcv.srv.Serve(ln)
+	if err != nil {
+		return
+	}
+	defer rcv.srv.GracefulStop()
+}
+
+func TestProcessor_ConsumeTraces(t *testing.T) {
+	//otel_grpc_receiver()
 }
 
 func TestProcessorConsume(t *testing.T) {
