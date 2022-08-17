@@ -163,6 +163,22 @@ func otel_grpc_receiver() {
 }
 
 func TestProcessor_ConsumeTraces(t *testing.T) {
+	//pe, err := prometheus.NewExporter(prometheus.Options{
+	//	Namespace: "ocmetricstutorial",
+	//})
+	//if err != nil {
+	//	log.Fatalf("Failed to create the Prometheus stats exporter: %v", err)
+	//}
+	//
+	//// Now finally run the Prometheus exporter as a scrape endpoint.
+	//// We'll run the server on port 8888.
+	//go func() {
+	//	mux := http.NewServeMux()
+	//	mux.Handle("/metrics", pe)
+	//	if err := http.ListenAndServe(":8888", mux); err != nil {
+	//		log.Fatalf("Failed to run Prometheus scrape endpoint: %v", err)
+	//	}
+	//}()
 	//otel_grpc_receiver()
 }
 
