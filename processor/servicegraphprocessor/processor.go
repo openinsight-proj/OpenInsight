@@ -273,8 +273,8 @@ func (p *processor) onExpire(*store.Edge) {
 }
 
 func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
-	//metricKey := p.buildMetricKey(e.SourceService, e.DestinationService, e.Dimensions)
-	metricKey, dimensions := buildDimensions(e)
+	metricKey := p.buildMetricKey(e.SourceService, e.DestinationService, e.Dimensions)
+	dimensions := buildDimensions(e)
 
 	// TODO: Consider configuring server or client latency
 	duration := e.DestinationLatency
@@ -320,22 +320,15 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 	p.reqDurationSecondsBucketCounts[key][index]++
 }
 
-func buildDimensions(e *store.Edge) (string, pcommon.Map) {
-	var keyList []string
+func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.UpsertString(sourceKey, e.SourceService)
 	dims.UpsertString(destinationKey, e.DestinationService)
 	dims.UpsertBool(failedKey, e.Failed)
-
-	keyList = append(keyList, fmt.Sprintf("%s-%s", sourceKey, e.SourceService))
-	keyList = append(keyList, fmt.Sprintf("%s-%s", destinationKey, e.DestinationService))
-	keyList = append(keyList, fmt.Sprintf("%s-%t", failedKey, e.Failed))
 	for k, v := range e.Dimensions {
 		dims.UpsertString(k, v)
-		keyList = append(keyList, fmt.Sprintf("%s-%s", k, v))
 	}
-	keyStr := strings.Join(keyList, "-")
-	return keyStr, dims
+	return dims
 }
 
 func (p *processor) buildMetrics() pmetric.Metrics {
