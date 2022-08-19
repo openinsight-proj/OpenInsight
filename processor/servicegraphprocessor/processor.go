@@ -273,8 +273,9 @@ func (p *processor) onExpire(*store.Edge) {
 }
 
 func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
-	metricKey := p.buildMetricKey(e.SourceService, e.DestinationService, e.Dimensions)
-	dimensions := buildDimensions(e)
+	// buildDimensions() can do it together
+	//metricKey := p.buildMetricKey(e.SourceService, e.DestinationService, e.Dimensions)
+	metricKey, dimensions := buildDimensions(e)
 
 	// TODO: Consider configuring server or client latency
 	duration := e.DestinationLatency
@@ -320,15 +321,21 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 	p.reqDurationSecondsBucketCounts[key][index]++
 }
 
-func buildDimensions(e *store.Edge) pcommon.Map {
+func buildDimensions(e *store.Edge) (string, pcommon.Map) {
 	dims := pcommon.NewMap()
 	dims.UpsertString(sourceKey, e.SourceService)
 	dims.UpsertString(destinationKey, e.DestinationService)
 	dims.UpsertBool(failedKey, e.Failed)
+	keyList := []string{
+		fmt.Sprintf("%s/%s", sourceKey, e.SourceService),
+		fmt.Sprintf("%s/%s", destinationKey, e.DestinationService),
+		fmt.Sprintf("%s/%t", failedKey, e.Failed),
+	}
 	for k, v := range e.Dimensions {
 		dims.UpsertString(k, v)
+		keyList = append(keyList, fmt.Sprintf("%s/%s", k, v))
 	}
-	return dims
+	return strings.Join(keyList, "/"), dims
 }
 
 func (p *processor) buildMetrics() pmetric.Metrics {
@@ -370,14 +377,6 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		if !ok {
 			return fmt.Errorf("failed to find dimensions for key %s", key)
 		}
-
-		//if value, ok := dimensions.Get("failed"); ok {
-		//	if value.AsString() == "false" {
-		//		fmt.Println("false")
-		//	} else {
-		//		fmt.Println("value:", value.AsString(), "=============================")
-		//	}
-		//}
 		dimensions.CopyTo(dpCalls.Attributes())
 	}
 

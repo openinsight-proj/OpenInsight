@@ -16,11 +16,15 @@ package servicegraphprocessor
 
 import (
 	"context"
+	"contrib.go.opencensus.io/exporter/prometheus"
 	"fmt"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"log"
 	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -126,6 +130,24 @@ func GRPCServer() *TracesReceiver {
 		return nil
 	}
 
+	_ = view.Register(serviceGraphProcessorViews()...)
+	pe, err := prometheus.NewExporter(prometheus.Options{
+		Namespace: "ocmetricstutorial",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create the Prometheus stats exporter: %v", err)
+	}
+
+	// Now finally run the Prometheus exporter as a scrape endpoint.
+	// We'll run the server on port 8888.
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", pe)
+		if err := http.ListenAndServe(":8888", mux); err != nil {
+			log.Fatalf("Failed to run Prometheus scrape endpoint: %v", err)
+		}
+	}()
+
 	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error {
 		return nil
 	})
@@ -162,23 +184,7 @@ func otel_grpc_receiver() {
 	defer rcv.srv.GracefulStop()
 }
 
-func TestProcessor_ConsumeTraces(t *testing.T) {
-	//pe, err := prometheus.NewExporter(prometheus.Options{
-	//	Namespace: "ocmetricstutorial",
-	//})
-	//if err != nil {
-	//	log.Fatalf("Failed to create the Prometheus stats exporter: %v", err)
-	//}
-	//
-	//// Now finally run the Prometheus exporter as a scrape endpoint.
-	//// We'll run the server on port 8888.
-	//go func() {
-	//	mux := http.NewServeMux()
-	//	mux.Handle("/metrics", pe)
-	//	if err := http.ListenAndServe(":8888", mux); err != nil {
-	//		log.Fatalf("Failed to run Prometheus scrape endpoint: %v", err)
-	//	}
-	//}()
+func TestProcessor_ConsumeTraces_from_remote(t *testing.T) {
 	//otel_grpc_receiver()
 }
 
