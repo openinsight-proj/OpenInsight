@@ -16,6 +16,15 @@ package servicegraphprocessor
 
 import (
 	"context"
+	"contrib.go.opencensus.io/exporter/prometheus"
+	"fmt"
+	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"log"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -100,6 +109,85 @@ func TestProcessorShutdown(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+type TracesReceiver struct {
+	srv *grpc.Server
+	p   *processor
+}
+
+func (r *TracesReceiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+	fmt.Println("span count:", req.Traces().SpanCount())
+	r.p.ConsumeTraces(context.Background(), req.Traces())
+	return ptraceotlp.NewResponse(), nil
+}
+
+func GRPCServer() *TracesReceiver {
+	cfg := &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+	}
+	pro, err := newProcessor(zap.NewExample(), cfg, consumertest.NewNop())
+	if err != nil {
+		return nil
+	}
+
+	_ = view.Register(serviceGraphProcessorViews()...)
+	pe, err := prometheus.NewExporter(prometheus.Options{
+		Namespace: "ocmetricstutorial",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create the Prometheus stats exporter: %v", err)
+	}
+
+	// Now finally run the Prometheus exporter as a scrape endpoint.
+	// We'll run the server on port 8888.
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", pe)
+		if err := http.ListenAndServe(":8888", mux); err != nil {
+			log.Fatalf("Failed to run Prometheus scrape endpoint: %v", err)
+		}
+	}()
+
+	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error {
+		return nil
+	})
+
+	mHost := &mockHost{
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.MetricsDataType: {
+					config.NewComponentID("mock"): mockMetricsExporter,
+				},
+			}
+		},
+	}
+	pro.Start(context.Background(), mHost)
+
+	rcv := &TracesReceiver{
+		srv: grpc.NewServer(),
+		p:   pro,
+	}
+	ptraceotlp.RegisterServer(rcv.srv, rcv)
+	return rcv
+}
+
+func otel_grpc_receiver() {
+	ln, err := net.Listen("tcp", "0.0.0.0:4317")
+	if err != nil {
+		return
+	}
+	rcv := GRPCServer()
+	err = rcv.srv.Serve(ln)
+	if err != nil {
+		return
+	}
+	defer rcv.srv.GracefulStop()
+}
+
+func TestProcessor_ConsumeTraces_from_remote(t *testing.T) {
+	//otel_grpc_receiver()
+}
+
 func TestProcessorConsume(t *testing.T) {
 	cfg := &Config{
 		MetricsExporter: "mock",
@@ -179,7 +267,7 @@ func verifyDuration(t *testing.T, m pmetric.Metric) {
 	dp := dps.At(0)
 	assert.Equal(t, float64(1000), dp.Sum()) // Duration: 1sec
 	assert.Equal(t, uint64(1), dp.Count())
-	assert.Equal(t, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0}, dp.MBucketCounts())
+	assert.Equal(t, pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0}), dp.BucketCounts())
 
 	attributes := dp.Attributes()
 	assert.Equal(t, 4, attributes.Len())

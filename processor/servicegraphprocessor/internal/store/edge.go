@@ -16,11 +16,20 @@ package store // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import "time"
 
+type ConnectionType string
+
+const (
+	Unknown         ConnectionType = ""
+	MessagingSystem                = "messaging_system"
+	Database                       = "database"
+)
+
 // Edge is an Edge between two nodes in the graph
 type Edge struct {
 	key string
 
 	TraceID                           string
+	ConnectionType                    ConnectionType
 	DestinationService, SourceService string
 	DestinationLatency, SourceLatency float64
 

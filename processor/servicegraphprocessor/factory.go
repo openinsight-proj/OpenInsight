@@ -27,7 +27,8 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "service_graph"
+	typeStr   = "service_graph"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the servicegraph processor.
@@ -38,7 +39,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
+		component.WithTracesProcessor(createTracesProcessor, stability),
 	)
 }
 
