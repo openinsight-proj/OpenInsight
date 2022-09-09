@@ -16,6 +16,14 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 BUILD_ARCH ?= linux/$(GOARCH)
 
+# ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+
+.DEFAULT_GOAL := all
+
+all-modules:
+	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
+
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
