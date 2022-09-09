@@ -1,7 +1,7 @@
 include ./Makefile.Common
 
 BUILD_OTELCOL=builder
-OTELCOL=./dist/otelcol-contrib
+OTELCOL=./cmd/otelcol-contrib
 
 
 # Images management
@@ -21,9 +21,10 @@ TOOLS_MOD_DIR := ./internal/tools
 install-tools:
 	GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.55.0
 
+# Build the Collector executable.
 .PHONY: build-otelcol
 build-otelcol:
-	CGO_ENABLED=0 $(BUILD_OTELCOL) --output-path=dist --config=builder/otelcol-builder.yaml
+	CGO_ENABLED=0 $(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
 
 .PHONY: run-otelcol
 run-otelcol:
@@ -63,4 +64,35 @@ endif
 .PHONY: run-otelcol-docker
 run-otelcol-docker: build-otelcol-docker
 	docker-compose up collector
+
+.PHONY: add-tag
+add-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Adding tag ${TAG}"
+	@git tag -a ${TAG} -s -m "Version ${TAG}"
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Adding tag "$${dir:2}/$${TAG}" && \
+	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
+	done
+
+.PHONY: push-tag
+push-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Pushing tag ${TAG}"
+	@git push git@github.com:openinsight-proj/OpenInsight.git  ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
+	 	git push git@github.com:openinsight-proj/OpenInsight.git  "$${dir:2}/$${TAG}"); \
+	done
+
+.PHONY: delete-tag
+delete-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Deleting tag ${TAG}"
+	@git tag -d ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
+	 	git tag -d "$${dir:2}/$${TAG}" ); \
+	done
+
 
