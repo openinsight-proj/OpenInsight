@@ -57,6 +57,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.59.0
@@ -322,6 +323,7 @@ require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/consul/api v1.14.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
@@ -565,5 +567,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.59.0 => /Users/tanjian/gitprojects/github/OpenInsight/extension/query
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.59.0 => /Users/tanjian/gitprojects/github/OpenInsight/processor/servicegraphprocessor

@@ -7,8 +7,8 @@ import (
 )
 
 type Protocols struct {
-	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *confighttp.HTTPServerSettings `mapstructure:"http"`
+	Grpc *configgrpc.GRPCServerSettings `mapstructure:"Grpc"`
+	Http *confighttp.HTTPServerSettings `mapstructure:"http"`
 }
 
 type StorageConfig struct {

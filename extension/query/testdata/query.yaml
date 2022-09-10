@@ -1,0 +1,28 @@
+extensions:
+  health_check:
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:18888
+
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  logging:
+    logLevel: debug
+
+processors:
+  batch:
+
+service:
+  extensions: [ query ]
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ logging ]

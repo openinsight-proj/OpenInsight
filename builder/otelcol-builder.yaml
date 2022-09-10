@@ -26,6 +26,8 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.59.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.59.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.59.0"
+    path: "./extension/query"
 
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter

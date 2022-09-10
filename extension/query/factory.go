@@ -14,7 +14,7 @@ const (
 	typeStr = "query"
 
 	// Protocol values.
-	protoGRPC = "grpc"
+	protoGRPC = "Grpc"
 	protoHTTP = "http"
 
 	// Default endpoints to bind to.
@@ -36,13 +36,13 @@ func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			Grpc: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  defaultGRPCBindEndpoint,
 					Transport: "tcp",
 				},
 			},
-			HTTP: &confighttp.HTTPServerSettings{
+			Http: &confighttp.HTTPServerSettings{
 				Endpoint: defaultHTTPBindEndpoint,
 			},
 		},
@@ -50,7 +50,7 @@ func createDefaultConfig() config.Extension {
 }
 
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	config := cfg.(*Config)
+	c := cfg.(*Config)
 
-	return newQueryServer(*config, set.TelemetrySettings), nil
+	return NewQueryServer(c, set.TelemetrySettings), nil
 }

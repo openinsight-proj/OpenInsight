@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateExtension(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.Grpc = &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultGRPCBindEndpoint,
 			Transport: "tcp",

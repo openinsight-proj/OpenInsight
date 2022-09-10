@@ -55,6 +55,7 @@ import (
 	k8sobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	oidcauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	query "github.com/open-telemetry/opentelemetry-collector-contrib/extension/query"
 	sigv4authextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -169,6 +170,7 @@ func components() (component.Factories, error) {
 		pprofextension.NewFactory(),
 		sigv4authextension.NewFactory(),
 		filestorage.NewFactory(),
+		query.NewFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
