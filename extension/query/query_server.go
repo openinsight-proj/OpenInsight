@@ -34,8 +34,9 @@ type queryServer struct {
 var _ component.PipelineWatcher = (*queryServer)(nil)
 
 func (qs *queryServer) Start(_ context.Context, host component.Host) error {
-	err := qs.Server()
+	closeGRPCGateway, err := qs.Server()
 	if err != nil {
+		closeGRPCGateway()
 		return err
 	}
 	return nil
@@ -62,10 +63,10 @@ func NewQueryServer(config *Config, settings component.TelemetrySettings) *query
 	return qs
 }
 
-func (s *queryServer) Server() error {
+func (s *queryServer) Server() (context.CancelFunc, error) {
 	listener, err := s.config.Protocols.Http.ToListener()
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", s.config.Protocols.Http.Endpoint, err)
+		return nil, fmt.Errorf("failed to bind to address %s: %w", s.config.Protocols.Http.Endpoint, err)
 	}
 	s.cmux = cmux.New(listener)
 	grpcListener := s.cmux.Match(cmux.HTTP2())
@@ -73,9 +74,7 @@ func (s *queryServer) Server() error {
 
 	// Create protocol servers
 	s.grpcServer = grpc.NewServer(grpc.MaxSendMsgSize(maxMsgSize))
-	s.httpServer = &http.Server{
-		Addr: fmt.Sprintf("bind to address %s", s.config.Http.Endpoint),
-	}
+	s.httpServer = &http.Server{Addr: s.config.Http.Endpoint}
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	extendMsgSizeOpt := grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxMsgSize))
@@ -86,13 +85,18 @@ func (s *queryServer) Server() error {
 	marshaller.EmitUnpopulated = true
 	s.GatewayServerMux = runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaller))
 
+	ctx, closeGRPCGateway := context.WithCancel(context.Background())
 	v1alpha1.RegisterQueryServiceServer(s.grpcServer, &Handler{QueryService: &QueryService{}})
-	err = v1alpha1.RegisterQueryServiceHandlerFromEndpoint(context.TODO(), s.GatewayServerMux, s.httpServer.Addr, extraOpt)
+	err = v1alpha1.RegisterQueryServiceHandlerFromEndpoint(ctx, s.GatewayServerMux, s.config.Protocols.Http.Endpoint, extraOpt)
 	if err != nil {
-		return err
+		closeGRPCGateway()
+		return closeGRPCGateway, err
 	}
 
-	// Use the muxed listeners for your servers.
+	s.router = mux.NewRouter().UseEncodedPath()
+	s.router.PathPrefix("/").Handler(s.GatewayServerMux)
+	s.httpServer.Handler = s.router
+
 	go func() {
 		err = s.grpcServer.Serve(grpcListener)
 		if err != nil {
@@ -109,5 +113,5 @@ func (s *queryServer) Server() error {
 
 	// Start serve
 	err = s.cmux.Serve()
-	return err
+	return closeGRPCGateway, err
 }
