@@ -1,0 +1,28 @@
+extensions:
+  nop:
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:8080
+      grpc:
+        endpoint: 0.0.0.0:9090
+    tracing_query:
+      storage_type: elasticsearch
+      endpoints: [ "https://elastic.example.com:9200" ]
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+processors:
+  nop:
+
+service:
+  extensions: [ query ]
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ nop ]

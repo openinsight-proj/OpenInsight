@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -46,6 +47,7 @@ func createDefaultConfig() config.Extension {
 				Endpoint: defaultHTTPBindEndpoint,
 			},
 		},
+		TracingQuery: &plugin.StorageConfig{},
 	}
 }
 
