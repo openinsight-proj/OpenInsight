@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/tracing/v1alpha1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin"
 	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -86,7 +87,26 @@ func (s *queryServer) Server() (context.CancelFunc, error) {
 	s.GatewayServerMux = runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaller))
 
 	ctx, closeGRPCGateway := context.WithCancel(context.Background())
-	v1alpha1.RegisterQueryServiceServer(s.grpcServer, &Handler{QueryService: &QueryService{}})
+
+	// TODO: register through factories.
+	factories, err := plugin.NewFactory(plugin.FactoryConfig{
+		TracingQueryType: s.config.TracingQuery.StorageType,
+		LoggingQueryType: s.config.LoggingQuery.StorageType,
+		MetricsQueryType: s.config.MetricsQuery.StorageType,
+	})
+
+	if err := factories.Initialize(s.logger); err != nil {
+		zap.S().Fatal("Failed to init storage factory", zap.Error(err))
+	}
+
+	tracingQuerySvc, err := factories.CreateSpanQuery()
+	if err != nil {
+		zap.S().Fatal("Failed to create span reader", zap.Error(err))
+	}
+
+	v1alpha1.RegisterQueryServiceServer(s.grpcServer, &Handler{QueryService: &QueryService{
+		tracingQuerySvc: tracingQuerySvc,
+	}})
 	err = v1alpha1.RegisterQueryServiceHandlerFromEndpoint(ctx, s.GatewayServerMux, s.config.Protocols.Http.Endpoint, extraOpt)
 	if err != nil {
 		closeGRPCGateway()

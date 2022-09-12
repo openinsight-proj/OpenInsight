@@ -4,7 +4,15 @@ extensions:
     protocols:
       http:
         endpoint: 0.0.0.0:18888
-
+    tracing_query:
+      storage_type: elasticsearch
+      endpoints: [ "http://localhost:9200" ]
+    logging_query:
+      storage_type: elasticsearch
+      endpoints: [ "http://localhost:9200" ]
+    metrics_query:
+      storage_type: prometheus
+      endpoints: [ "http://localhost:9200" ]
 
 receivers:
   otlp:
