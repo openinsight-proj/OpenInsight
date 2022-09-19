@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
 	"go.uber.org/zap"
@@ -19,14 +20,15 @@ var AllStorageTypes = []string{
 }
 
 type FactoryConfig struct {
-	TracingQueryType string
-	LoggingQueryType string
-	MetricsQueryType string
+	TracingQueryType *StorageConfig
+	LoggingQueryType *StorageConfig
+	MetricsQueryType *StorageConfig
 }
 
 type Factory struct {
 	FactoryConfig
 	factories map[string]storage.Factory
+	sConfig   *query.Config
 }
 
 func (f *Factory) getFactoryOfType(factoryType string) (storage.Factory, error) {
@@ -41,16 +43,12 @@ func (f *Factory) getFactoryOfType(factoryType string) (storage.Factory, error) 
 }
 
 // NewFactory creates the meta-factory.
-func NewFactory(config FactoryConfig) (*Factory, error) {
-	f := &Factory{FactoryConfig: config}
-	uniqueTypes := map[string]struct{}{
-		f.TracingQueryType: {},
-		f.LoggingQueryType: {},
-		f.MetricsQueryType: {},
-	}
+func NewFactory(sConfig *query.Config, config FactoryConfig) (*Factory, error) {
+	f := &Factory{FactoryConfig: config, sConfig: sConfig}
+	uniqueTypes := []string{f.TracingQueryType.StorageType, f.LoggingQueryType.StorageType, f.MetricsQueryType.StorageType}
 	f.factories = make(map[string]storage.Factory)
 
-	for t := range uniqueTypes {
+	for _, t := range uniqueTypes {
 		ff, err := f.getFactoryOfType(t)
 		if err != nil {
 			return nil, err
@@ -61,7 +59,7 @@ func NewFactory(config FactoryConfig) (*Factory, error) {
 }
 
 // Initialize implements storage.Factory.
-func (f *Factory) Initialize(logger *zap.Logger) error {
+func (f *Factory) Initialize(cfg *query.Config, logger *zap.Logger) error {
 	for _, factory := range f.factories {
 		if err := factory.Initialize(logger); err != nil {
 			return err
@@ -72,7 +70,7 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 }
 
 func (f *Factory) CreateSpanQuery() (storage.Query, error) {
-	factory, ok := f.factories[f.TracingQueryType]
+	factory, ok := f.factories[f.TracingQueryType.StorageType]
 	if !ok {
 		return nil, fmt.Errorf("no %s backend registered for span store", f.TracingQueryType)
 	}

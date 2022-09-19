@@ -25,7 +25,19 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := factory.CreateDefaultConfig()
 
 	defaultCfg.(*Config).TracingQuery.StorageType = "elasticsearch"
-	defaultCfg.(*Config).TracingQuery.Endpoints = []string{"https://elastic.example.com:9200"}
+	//defaultCfg.(*Config).TracingQuery.Endpoints = []string{"https://elastic.example.com:9200"}
 	r0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, defaultCfg)
+}
+
+func TestLoadConfigSelector(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+
+	factories.Extensions[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "test-config-2.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
 }

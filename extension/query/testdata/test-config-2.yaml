@@ -1,0 +1,34 @@
+extensions:
+  nop:
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:18888
+    tracing_query:
+      storage_type: elasticsearch
+      elasticsearch:
+        endpoints: [ "http://localhost:9200" ]
+        traces_index: trace_index
+        user: elastic
+        password: search
+      clickhouse:
+        dsn: tcp://127.0.0.1:9000?database=default
+        ttl_days: 3
+        timeout: 5s
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+processors:
+  nop:
+
+service:
+  extensions: [ query ]
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ nop ]
