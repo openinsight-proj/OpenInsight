@@ -6,13 +6,15 @@ extensions:
         endpoint: 0.0.0.0:18888
     tracing_query:
       storage_type: elasticsearch
-      endpoints: [ "http://localhost:9200" ]
-    logging_query:
-      storage_type: elasticsearch
-      endpoints: [ "http://localhost:9200" ]
-    metrics_query:
-      storage_type: prometheus
-      endpoints: [ "http://localhost:9200" ]
+      elasticsearch:
+        endpoints: [ "http://localhost:9200" ]
+        traces_index: trace_index
+        user: elastic
+        password: search
+      clickhouse:
+        dsn: tcp://127.0.0.1:9000?database=default
+        ttl_days: 3
+        timeout: 5s
 
 receivers:
   otlp:

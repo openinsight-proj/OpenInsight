@@ -48,6 +48,8 @@ func createDefaultConfig() config.Extension {
 			},
 		},
 		TracingQuery: &plugin.StorageConfig{},
+		LoggingQuery: &plugin.StorageConfig{},
+		MetricsQuery: &plugin.StorageConfig{},
 	}
 }
 

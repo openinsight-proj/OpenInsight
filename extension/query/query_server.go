@@ -89,13 +89,16 @@ func (s *queryServer) Server() (context.CancelFunc, error) {
 	ctx, closeGRPCGateway := context.WithCancel(context.Background())
 
 	// TODO: register through factories.
-	factories, err := plugin.NewFactory(s.config, plugin.FactoryConfig{
-		TracingQueryType: s.config.TracingQuery,
-		LoggingQueryType: s.config.LoggingQuery,
-		MetricsQueryType: s.config.MetricsQuery,
+	factories, err := plugin.NewFactory(&plugin.FactoryConfig{
+		TracingQuery: s.config.TracingQuery,
+		MetricsQuery: s.config.MetricsQuery,
+		LoggingQuery: s.config.LoggingQuery,
 	})
 
-	if err := factories.Initialize(s.config, s.logger); err != nil {
+	if err != nil {
+		s.logger.Fatal("Failed init factories", zap.Error(err))
+	}
+	if err := factories.Initialize(s.logger); err != nil {
 		zap.S().Fatal("Failed to init storage factory", zap.Error(err))
 	}
 

@@ -4,11 +4,17 @@ extensions:
     protocols:
       http:
         endpoint: 0.0.0.0:8080
-      grpc:
-        endpoint: 0.0.0.0:9090
     tracing_query:
       storage_type: elasticsearch
-      endpoints: [ "https://elastic.example.com:9200" ]
+      elasticsearch:
+        endpoints: [ "http://localhost:9200" ]
+        traces_index: trace_index
+        user: elastic
+        password: search
+      clickhouse:
+        dsn: tcp://127.0.0.1:9000?database=default
+        ttl_days: 3
+        timeout: 5s
 
 receivers:
   nop:

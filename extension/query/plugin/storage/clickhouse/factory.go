@@ -1,4 +1,4 @@
-package es
+package clickhouse
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
@@ -11,14 +11,10 @@ var (
 	_ io.Closer = (*Factory)(nil)
 )
 
-type ElasticsearchType struct {
-	TracesIndex string   `mapstructure:"traces_index"`
-	Endpoints   []string `mapstructure:"endpoints"`
-	// User is used to configure HTTP Basic Authentication.
-	User string `mapstructure:"user"`
-
-	// Password is used to configure HTTP Basic Authentication.
-	Password string `mapstructure:"password"`
+type ClickhouseType struct {
+	Dsn     string `mapstructure:"dsn"`
+	Ttl     int64  `mapstructure:"ttl_days"`
+	Timeout string `mapstructure:"timeout"`
 }
 
 // Factory implements storage.Factory for Elasticsearch as storage.
@@ -26,24 +22,16 @@ type Factory struct {
 	logger *zap.Logger
 
 	client *client.Elastic
-	cfg    *ElasticsearchType
+	cfg    *ClickhouseType
 }
 
 func (f *Factory) Initialize(logger *zap.Logger) error {
-
-	logger.Info("init elasticsearch storage factory...")
-	c, err := client.New(f.cfg.Endpoints, f.cfg.User, f.cfg.Password, f.cfg.TracesIndex)
-	if err != nil {
-		return err
-	}
-	f.client = c
+	//TODO：
 	return nil
 }
 
 func (f *Factory) CreateSpanQuery() (storage.Query, error) {
-	return &ElasticsearchQuery{
-		client: f.client,
-	}, nil
+	return &ClickHouseQuery{}, nil
 }
 
 // Close closes the resources held by the factory
@@ -52,8 +40,8 @@ func (f *Factory) Close() error {
 }
 
 // NewFactory creates a new Factory.
-func NewFactory(es *ElasticsearchType) *Factory {
+func NewFactory(ct *ClickhouseType) *Factory {
 	return &Factory{
-		cfg: es,
+		cfg: ct,
 	}
 }

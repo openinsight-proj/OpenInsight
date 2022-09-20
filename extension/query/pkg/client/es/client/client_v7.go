@@ -13,12 +13,12 @@ type Elastic struct {
 	Client *elasticsearch.Client
 }
 
-func New(address string, username, password, index string) (*Elastic, error) {
+func New(address []string, username, password, index string) (*Elastic, error) {
 	var client *elasticsearch.Client
 	var err error
 
 	client, err = elasticsearch.NewClient(elasticsearch.Config{
-		Addresses: []string{address},
+		Addresses: address,
 		Username:  username,
 		Password:  password,
 		Transport: &http.Transport{

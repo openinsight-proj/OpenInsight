@@ -2,8 +2,8 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
 	"go.uber.org/zap"
 )
@@ -11,41 +11,51 @@ import (
 const (
 	elasticsearchQueryType = "elasticsearch"
 	prometheusQueryType    = "prometheus"
+	clickhouseQueryType    = "clickhouse"
 )
 
 // AllQueryTypes defines all available storage backends
 var AllStorageTypes = []string{
 	elasticsearchQueryType,
 	prometheusQueryType,
+	clickhouseQueryType,
 }
 
 type FactoryConfig struct {
-	TracingQueryType *StorageConfig
-	LoggingQueryType *StorageConfig
-	MetricsQueryType *StorageConfig
+	TracingQuery *StorageConfig
+	MetricsQuery *StorageConfig
+	LoggingQuery *StorageConfig
 }
-
 type Factory struct {
-	FactoryConfig
 	factories map[string]storage.Factory
-	sConfig   *query.Config
+	sConfig   *FactoryConfig
 }
 
 func (f *Factory) getFactoryOfType(factoryType string) (storage.Factory, error) {
 	switch factoryType {
+	//TODO: refactoring
 	case elasticsearchQueryType:
-		return es.NewFactory(), nil
-	case prometheusQueryType:
-		return es.NewFactory(), nil
+		return es.NewFactory(f.sConfig.TracingQuery.ElasticsearchType), nil
+	case clickhouseQueryType:
+		return clickhouse.NewFactory(f.sConfig.TracingQuery.ClickhouseType), nil
 	default:
 		return nil, fmt.Errorf("unknown query type %s. Valid types are %v", factoryType, AllStorageTypes)
 	}
 }
 
 // NewFactory creates the meta-factory.
-func NewFactory(sConfig *query.Config, config FactoryConfig) (*Factory, error) {
-	f := &Factory{FactoryConfig: config, sConfig: sConfig}
-	uniqueTypes := []string{f.TracingQueryType.StorageType, f.LoggingQueryType.StorageType, f.MetricsQueryType.StorageType}
+func NewFactory(cfg *FactoryConfig) (*Factory, error) {
+	f := &Factory{sConfig: cfg}
+	uniqueTypes := []string{}
+	if cfg.TracingQuery.StorageType != "" {
+		uniqueTypes = append(uniqueTypes, cfg.TracingQuery.StorageType)
+	}
+	if cfg.LoggingQuery.StorageType != "" {
+		uniqueTypes = append(uniqueTypes, cfg.LoggingQuery.StorageType)
+	}
+	if cfg.MetricsQuery.StorageType != "" {
+		uniqueTypes = append(uniqueTypes, cfg.MetricsQuery.StorageType)
+	}
 	f.factories = make(map[string]storage.Factory)
 
 	for _, t := range uniqueTypes {
@@ -59,7 +69,7 @@ func NewFactory(sConfig *query.Config, config FactoryConfig) (*Factory, error) {
 }
 
 // Initialize implements storage.Factory.
-func (f *Factory) Initialize(cfg *query.Config, logger *zap.Logger) error {
+func (f *Factory) Initialize(logger *zap.Logger) error {
 	for _, factory := range f.factories {
 		if err := factory.Initialize(logger); err != nil {
 			return err
@@ -70,9 +80,9 @@ func (f *Factory) Initialize(cfg *query.Config, logger *zap.Logger) error {
 }
 
 func (f *Factory) CreateSpanQuery() (storage.Query, error) {
-	factory, ok := f.factories[f.TracingQueryType.StorageType]
+	factory, ok := f.factories[f.sConfig.TracingQuery.StorageType]
 	if !ok {
-		return nil, fmt.Errorf("no %s backend registered for span store", f.TracingQueryType)
+		return nil, fmt.Errorf("no %s backend registered for span store", f.sConfig.TracingQuery.StorageType)
 	}
 	return factory.CreateSpanQuery()
 }
