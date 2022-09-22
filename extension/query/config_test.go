@@ -27,6 +27,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := factory.CreateDefaultConfig()
 
 	defaultCfg.(*Config).TracingQuery.StorageType = "elasticsearch"
+	defaultCfg.(*Config).MetricsQuery.StorageType = "elasticsearch"
+	defaultCfg.(*Config).LoggingQuery.StorageType = "elasticsearch"
 	defaultCfg.(*Config).TracingQuery.ElasticsearchType = &es.ElasticsearchType{
 		Endpoints:   []string{"http://localhost:9200"},
 		User:        "elastic",
@@ -38,6 +40,20 @@ func TestLoadConfig(t *testing.T) {
 		Dsn:     "tcp://127.0.0.1:9000?database=default",
 		Ttl:     3,
 		Timeout: "5s",
+	}
+
+	defaultCfg.(*Config).MetricsQuery.ElasticsearchType = &es.ElasticsearchType{
+		Endpoints:   []string{"http://localhost:9200"},
+		User:        "elastic",
+		Password:    "search",
+		TracesIndex: "trace_index",
+	}
+
+	defaultCfg.(*Config).LoggingQuery.ElasticsearchType = &es.ElasticsearchType{
+		Endpoints:   []string{"http://localhost:9200"},
+		User:        "elastic",
+		Password:    "search",
+		TracesIndex: "trace_index",
 	}
 
 	r0 := cfg.Extensions[config.NewComponentID(typeStr)]
