@@ -3,6 +3,8 @@ package query
 import (
 	"context"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -42,6 +44,10 @@ func createDefaultConfig() config.Extension {
 			Http: &confighttp.HTTPServerSettings{
 				Endpoint: defaultHTTPBindEndpoint,
 			},
+		},
+		Storage: &Storage{
+			ElasticsearchType: &es.ElasticsearchType{},
+			ClickhouseType:    &clickhouse.ClickhouseType{},
 		},
 		TracingQuery: &plugin.StorageConfig{},
 		LoggingQuery: &plugin.StorageConfig{},

@@ -92,9 +92,11 @@ func NewQueryServer(config *Config, settings component.TelemetrySettings) *query
 
 func (qs *queryServer) initFactories() (*plugin.Factory, error) {
 	factories, err := plugin.NewFactory(&plugin.FactoryConfig{
-		TracingQuery: qs.config.TracingQuery,
-		MetricsQuery: qs.config.MetricsQuery,
-		LoggingQuery: qs.config.LoggingQuery,
+		ElasticsearchStorage: qs.config.Storage.ElasticsearchType,
+		ClickhouseStorage:    qs.config.Storage.ClickhouseType,
+		TracingQuery:         qs.config.TracingQuery,
+		MetricsQuery:         qs.config.MetricsQuery,
+		LoggingQuery:         qs.config.LoggingQuery,
 	})
 	if err != nil {
 		qs.logger.Fatal("Failed init factories", zap.Error(err))

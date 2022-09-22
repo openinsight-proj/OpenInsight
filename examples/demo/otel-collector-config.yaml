@@ -45,17 +45,22 @@ extensions:
         endpoint: 0.0.0.0:18888
       grpc:
         endpoint: 0.0.0.0:18889
-    tracing_query:
-      storage_type: elasticsearch
+    storage:
       elasticsearch:
         endpoints: [ "http://elasticsearch:9200" ]
         traces_index: trace_index
         user: elastic
-        password: XAlJ948ZY0leE320SQ6hfv17
+        password: search
       clickhouse:
         dsn: tcp://127.0.0.1:9000?database=default
         ttl_days: 3
         timeout: 5s
+    tracing_query:
+      storage_type: elasticsearch
+    logging_query:
+      storage_type: elasticsearch
+    metrics_query:
+      storage_type: elasticsearch
 
 service:
   extensions: [pprof, zpages, query, health_check]

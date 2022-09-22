@@ -22,9 +22,12 @@ var AllStorageTypes = []string{
 }
 
 type FactoryConfig struct {
-	TracingQuery *StorageConfig
-	MetricsQuery *StorageConfig
-	LoggingQuery *StorageConfig
+	ElasticsearchStorage *es.ElasticsearchType
+	ClickhouseStorage    *clickhouse.ClickhouseType
+	TracingQuery         *StorageConfig
+	MetricsQuery         *StorageConfig
+	LoggingQuery         *StorageConfig
+	//TODO: add others
 }
 type Factory struct {
 	factories map[string]storage.Factory
@@ -35,9 +38,9 @@ func (f *Factory) getFactoryOfType(factoryType string) (storage.Factory, error) 
 	switch factoryType {
 	//TODO: refactoring
 	case elasticsearchQueryType:
-		return es.NewFactory(f.sConfig.TracingQuery.ElasticsearchType), nil
+		return es.NewFactory(f.sConfig.ElasticsearchStorage), nil
 	case clickhouseQueryType:
-		return clickhouse.NewFactory(f.sConfig.TracingQuery.ClickhouseType), nil
+		return clickhouse.NewFactory(f.sConfig.ClickhouseStorage), nil
 	default:
 		return nil, fmt.Errorf("unknown query type %s. Valid types are %v", factoryType, AllStorageTypes)
 	}
