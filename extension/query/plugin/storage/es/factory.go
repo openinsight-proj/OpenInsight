@@ -30,8 +30,6 @@ type Factory struct {
 }
 
 func (f *Factory) Initialize(logger *zap.Logger) error {
-
-	logger.Info("init elasticsearch storage factory...")
 	c, err := client.New(f.cfg.Endpoints, f.cfg.User, f.cfg.Password, f.cfg.TracesIndex)
 	if err != nil {
 		return err

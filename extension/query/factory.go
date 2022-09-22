@@ -14,10 +14,6 @@ import (
 const (
 	typeStr = "query"
 
-	// Protocol values.
-	protoGRPC = "Grpc"
-	protoHTTP = "http"
-
 	// Default endpoints to bind to.
 	defaultGRPCBindEndpoint = "0.0.0.0:9090"
 	defaultHTTPBindEndpoint = "0.0.0.0:8080"
@@ -29,7 +25,7 @@ func NewFactory() component.ExtensionFactory {
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		component.StabilityLevelAlpha,
 	)
 }
 
