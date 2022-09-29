@@ -22,6 +22,7 @@ import (
 
 var (
 	statDroppedSpans = stats.Int64("dropped_spans", "Number of spans dropped when trying to add edges", stats.UnitDimensionless)
+	statSkippedSpans = stats.Int64("skipped_spans", "Number of spans dropped when they are miss service.name attribute", stats.UnitDimensionless)
 	statTotalEdges   = stats.Int64("total_edges", "Total number of unique edges", stats.UnitDimensionless)
 	statExpiredEdges = stats.Int64("expired_edges", "Number of edges that expired before finding its matching span", stats.UnitDimensionless)
 )

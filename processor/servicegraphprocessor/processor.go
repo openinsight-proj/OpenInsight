@@ -181,6 +181,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 		serviceName, ok := findServiceName(rAttributes)
 		if !ok {
 			// If service.name doesn't exist, skip processing this trace
+			stats.Record(ctx, statSkippedSpans.M(1))
 			continue
 		}
 
