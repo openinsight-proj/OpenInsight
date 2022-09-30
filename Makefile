@@ -32,14 +32,29 @@ install-tools:
 # Build the Collector executable.
 .PHONY: build-otelcol
 build-otelcol:
-	CGO_ENABLED=0 $(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
+	$(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
+
+.PHONY: insight-darwin
+insight-darwin:
+	CGO_ENABLED=0 GOOS=darwin GOPROXY=https://goproxy.cn,direct make build-otelcol
+
+.PHONY: insight-linux
+insight-linux:
+	CGO_ENABLED=0 GOOS=linux GOPROXY=https://goproxy.cn,direct make build-otelcol
 
 .PHONY: run-otelcol
 run-otelcol:
 	$(OTELCOL) --config configs/otelcol-contrib.yaml
 
 .PHONY: build-otelcol-docker
-build-otelcol-docker:
+build-otelcol-docker: insight-linux
+	docker build --tag $(REGISTRY)/openinsight:$(TAG)  \
+    			--tag $(REGISTRY)/openinsight:latest  \
+    			-f ./Dockerfile \
+    			.
+
+.PHONY: build-otelcol-docker-multiarch
+build-otelcol-docker-multiarch:
 	echo "Building otelcol for arch = $(BUILD_ARCH)"
 	export DOCKER_CLI_EXPERIMENTAL=enabled ;\
 	docker buildx create --use --platform=$(BUILD_ARCH) --name otelcol-multi-platform-builder ;\
@@ -70,8 +85,8 @@ endif
     			.
 
 .PHONY: run-otelcol-docker
-run-otelcol-docker: build-otelcol-docker
-	docker-compose up collector
+run-otelcol-demo: build-otelcol-docker
+	docker-compose -f  examples/demo/docker-compose.yaml up
 
 .PHONY: add-tag
 add-tag:

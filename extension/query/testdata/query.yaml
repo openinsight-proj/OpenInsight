@@ -1,0 +1,44 @@
+extensions:
+  health_check:
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:8080
+    storage:
+      elasticsearch:
+        endpoints: [ "http://localhost:9200" ]
+        traces_index: trace_index
+        user: elastic
+        password: search
+      clickhouse:
+        dsn: tcp://127.0.0.1:9000?database=default
+        ttl_days: 3
+        timeout: 5s
+    tracing_query:
+      storage_type: elasticsearch
+    logging_query:
+      storage_type: elasticsearch
+    metrics_query:
+      storage_type: elasticsearch
+
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  logging:
+    logLevel: debug
+
+processors:
+  batch:
+
+service:
+  extensions: [ query ]
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ logging ]

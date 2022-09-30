@@ -1,5 +1,6 @@
 GO_BUILD_TAGS=""
 GOTEST_OPT?= -race -v -timeout 300s --tags=$(GO_BUILD_TAGS)
+GOCMD?= go
 GOTEST=go test
 LINT=golangci-lint
 
@@ -17,11 +18,16 @@ fmt:
 	gofmt  -w -s ./
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy -compat=1.18
+
 .PHONY: lint
 lint:
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: dep
 dep:
-	go mod download
+	$(GOCMD) mod download
 

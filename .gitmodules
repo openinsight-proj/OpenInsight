@@ -1,0 +1,3 @@
+[submodule "extension/query/api/opentelemetry-proto"]
+	path = extension/query/api/opentelemetry-proto
+	url = https://github.com/open-telemetry/opentelemetry-proto.git

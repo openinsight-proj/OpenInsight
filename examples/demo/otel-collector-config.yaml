@@ -1,0 +1,75 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      label1: value1
+  logging:
+  elasticsearch/trace:
+    tls:
+      insecure: true
+      insecure_skip_verify: true
+    endpoints: [http://elasticsearch:9200]
+    timeout: 2m
+    traces_index: trace_index
+    user: elastic
+    password: XAlJ948ZY0leE320SQ6hfv17
+    discover:
+      on_start: true
+    flush:
+      bytes: 10485760
+    retry:
+      max_requests: 5
+
+processors:
+  batch:
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:18888
+      grpc:
+        endpoint: 0.0.0.0:18889
+    storage:
+      elasticsearch:
+        endpoints: [ "http://elasticsearch:9200" ]
+        traces_index: trace_index
+        user: elastic
+        password: search
+      clickhouse:
+        dsn: tcp://127.0.0.1:9000?database=default
+        ttl_days: 3
+        timeout: 5s
+    tracing_query:
+      storage_type: elasticsearch
+    logging_query:
+      storage_type: elasticsearch
+    metrics_query:
+      storage_type: elasticsearch
+
+service:
+  extensions: [pprof, zpages, query, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, elasticsearch/trace]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, prometheus]
