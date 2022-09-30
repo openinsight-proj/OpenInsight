@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicegraphprocessor
+package insightservicegraphprocessor
 
 import (
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"

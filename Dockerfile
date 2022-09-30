@@ -2,7 +2,7 @@ FROM alpine:3.13 as certs
 RUN apk --update add ca-certificates
 
 FROM alpine:3.13 AS otelcol-contrib
-COPY dist/otelcol-contrib /otelcol-contrib
+COPY cmd/otelcol-contrib /otelcol-contrib
 # Note that this shouldn't be necessary, but in some cases the file seems to be
 # copied with the execute bit lost (see #1317)
 RUN chmod 755 /otelcol-contrib

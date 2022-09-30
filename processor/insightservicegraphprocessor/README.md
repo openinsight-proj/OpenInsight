@@ -25,7 +25,7 @@ Since the service graph processor has to process both sides of an edge, it needs
 # Example configuration for the component
 ```yaml
 processors:
-  service_graph:
+  insight_service_graph:
     metrics_exporter: metrics
     latency_histogram_buckets: [1,2,3,4,5]
     dimensions:

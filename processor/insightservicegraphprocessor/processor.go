@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
+package insightservicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor"
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor/internal/store"
 	"math"
 	"sort"
 	"strconv"
@@ -25,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -82,7 +82,7 @@ type processor struct {
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processor, error) {
-	logger.Info("Building servicegraphsprocessor")
+	logger.Info("Building insightservicegraphprocessor")
 
 	pConfig := config.(*Config)
 
@@ -181,6 +181,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 		serviceName, ok := findServiceName(rAttributes)
 		if !ok {
 			// If service.name doesn't exist, skip processing this trace
+			stats.Record(ctx, statSkippedSpans.M(1))
 			continue
 		}
 
@@ -325,11 +326,11 @@ func (p *processor) updateDurationMetrics(key string, duration float64) {
 
 func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
-	dims.UpsertString(sourceKey, e.SourceService)
-	dims.UpsertString(destinationKey, e.DestinationService)
-	dims.UpsertBool(failedKey, e.Failed)
+	dims.PutString(sourceKey, e.SourceService)
+	dims.PutString(destinationKey, e.DestinationService)
+	dims.PutBool(failedKey, e.Failed)
 	for k, v := range e.Dimensions {
-		dims.UpsertString(k, v)
+		dims.PutString(k, v)
 	}
 	return dims
 }
@@ -358,16 +359,15 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 	// collect req total metrics
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetDataType(pmetric.MetricDataTypeSum)
 		mCount.SetName("otel_traces_service_graph_request_total")
-		mCount.Sum().SetIsMonotonic(true)
+		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(c)
+		dpCalls.SetIntValue(c)
 
 		dimensions, ok := p.dimensionsForSeries(key)
 		if !ok {
@@ -382,18 +382,17 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetDataType(pmetric.MetricDataTypeHistogram)
 		mDuration.SetName("otel_traces_service_graph_request_duration_seconds")
 		// TODO: Support other aggregation temporalities
-		mDuration.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpDuration.SetTimestamp(timestamp)
-		dpDuration.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.reqDurationBounds))
-		dpDuration.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.reqDurationSecondsBucketCounts[key]))
+		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+		dpDuration.BucketCounts().FromRaw(p.reqDurationSecondsBucketCounts[key])
 		dpDuration.SetCount(p.reqDurationSecondsCount[key])
 		dpDuration.SetSum(p.reqDurationSecondsSum[key])
 
