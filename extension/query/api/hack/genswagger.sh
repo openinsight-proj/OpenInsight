@@ -51,5 +51,4 @@ else
   WORKDIR=$CI_PROJECT_DIR/api
 fi
 
-#docker run --platform linux/amd64 --rm --user $(id -u):$(id -g) -v $GOPATH:/go $VOLUME_OPTION -w $WORKDIR quay.m.daocloud.io/goswagger/swagger:v0.28.0 generate client -f ./assets/swagger/$CURRENT_VERSION/query_service.swagger.json -t ./sdk/$CURRENT_VERSION
-docker run --platform linux/amd64 --rm --user $(id -u):$(id -g) -v $GOPATH:/go $VOLUME_OPTION -w $WORKDIR quay.m.daocloud.io/goswagger/swagger:v0.28.0 generate client -f ./assets/swagger/$CURRENT_VERSION/query_service.swagger.json
+docker run --platform linux/amd64 --rm --user $(id -u):$(id -g) -v $GOPATH:/go $VOLUME_OPTION -w $WORKDIR quay.m.daocloud.io/goswagger/swagger:v0.28.0 generate client -f ./assets/swagger/$CURRENT_VERSION/query_service.swagger.json -t ./sdk/$CURRENT_VERSION

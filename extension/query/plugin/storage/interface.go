@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/duration"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"time"
@@ -21,9 +22,9 @@ type TraceQueryParameters struct {
 	ServiceName   string
 	OperationName string
 	Tags          map[string]string
-	StartTimeMin  time.Time
-	StartTimeMax  time.Time
-	DurationMin   time.Duration
-	DurationMax   time.Duration
+	StartTime     time.Time
+	EndTime       time.Time
+	DurationMin   *duration.Duration
+	DurationMax   *duration.Duration
 	NumTraces     int
 }

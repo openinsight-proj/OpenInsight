@@ -1,4 +1,4 @@
-syntax="proto3";
+syntax = "proto3";
 
 package tracing.v1alpha1;
 
@@ -36,9 +36,9 @@ message TraceQueryParameters {
   // At least one span in a trace must match all specified attributes.
   map<string, string> attributes = 3;
   // Span min start time in. REST API uses RFC-3339ns format. Required.
-  google.protobuf.Timestamp start_time_min = 4;
+  google.protobuf.Timestamp start_time = 4;
   // Span max start time. REST API uses RFC-3339ns format. Required.
-  google.protobuf.Timestamp start_time_max = 5;
+  google.protobuf.Timestamp end_time = 5;
   // Span min duration. REST API uses Golang's time format e.g. 10s.
   google.protobuf.Duration duration_min = 6;
   // Span max duration. REST API uses Golang's time format e.g. 10s.

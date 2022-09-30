@@ -110,7 +110,7 @@
             "type": "string"
           },
           {
-            "name": "query.startTimeMin",
+            "name": "query.startTime",
             "description": "Span min start time in. REST API uses RFC-3339ns format. Required.",
             "in": "query",
             "required": false,
@@ -118,7 +118,7 @@
             "format": "date-time"
           },
           {
-            "name": "query.startTimeMax",
+            "name": "query.endTime",
             "description": "Span max start time. REST API uses RFC-3339ns format. Required.",
             "in": "query",
             "required": false,
@@ -611,12 +611,12 @@
           },
           "description": "Attributes are matched against Span and Resource attributes.\nAt least one span in a trace must match all specified attributes."
         },
-        "startTimeMin": {
+        "startTime": {
           "type": "string",
           "format": "date-time",
           "description": "Span min start time in. REST API uses RFC-3339ns format. Required."
         },
-        "startTimeMax": {
+        "endTime": {
           "type": "string",
           "format": "date-time",
           "description": "Span max start time. REST API uses RFC-3339ns format. Required."

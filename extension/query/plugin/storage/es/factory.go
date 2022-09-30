@@ -12,8 +12,10 @@ var (
 )
 
 type ElasticsearchType struct {
-	TracesIndex string   `mapstructure:"traces_index"`
-	Endpoints   []string `mapstructure:"endpoints"`
+	TracesIndex  string   `mapstructure:"traces_index"`
+	LoggingIndex string   `mapstructure:"logs_index"`
+	MetricsIndex string   `mapstructure:"metrics_index"`
+	Endpoints    []string `mapstructure:"endpoints"`
 	// User is used to configure HTTP Basic Authentication.
 	User string `mapstructure:"user"`
 
@@ -30,7 +32,7 @@ type Factory struct {
 }
 
 func (f *Factory) Initialize(logger *zap.Logger) error {
-	c, err := client.New(f.cfg.Endpoints, f.cfg.User, f.cfg.Password, f.cfg.TracesIndex)
+	c, err := client.New(f.cfg.Endpoints, f.cfg.User, f.cfg.Password)
 	if err != nil {
 		return err
 	}
@@ -40,7 +42,10 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 
 func (f *Factory) CreateSpanQuery() (storage.Query, error) {
 	return &ElasticsearchQuery{
-		client: f.client,
+		client:       f.client,
+		SpanIndex:    f.cfg.TracesIndex,
+		MetricsIndex: f.cfg.MetricsIndex,
+		LoggingIndex: f.cfg.LoggingIndex,
 	}, nil
 }
 

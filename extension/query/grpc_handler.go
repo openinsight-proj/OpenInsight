@@ -37,7 +37,16 @@ func (t *Handler) GetOperations(context.Context, *v1alpha1.GetOperationsRequest)
 // find traces by params
 func (t *Handler) FindTraces(ctx context.Context, request *v1alpha1.FindTracesRequest) (*v1alpha1.SpansResponseChunk, error) {
 
-	_, err := t.QueryService.tracingQuerySvc.FindTraces(ctx, &storage.TraceQueryParameters{})
+	_, err := t.QueryService.tracingQuerySvc.FindTraces(ctx, &storage.TraceQueryParameters{
+		//ServiceName:   request.Query.ServiceName,
+		//OperationName: request.Query.OperationName,
+		//Tags:          request.Query.Attributes,
+		//StartTime:     request.Query.StartTime.AsTime(),
+		//EndTime:       request.Query.EndTime.AsTime(),
+		//DurationMin:   request.Query.DurationMin,
+		//DurationMax:   request.Query.DurationMax,
+		//NumTraces: int(request.Query.NumTraces),
+	})
 	if err != nil {
 		zap.S().Errorf("query tracing failed: $s", zap.Error(err))
 	}
