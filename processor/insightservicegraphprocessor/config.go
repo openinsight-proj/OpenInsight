@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
+package insightservicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor"
 
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor/internal/store"
 	"go.opentelemetry.io/collector/config"
 )
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
+package insightservicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor"
 
 import (
 	"go.opencensus.io/stats"
@@ -22,6 +22,7 @@ import (
 
 var (
 	statDroppedSpans = stats.Int64("dropped_spans", "Number of spans dropped when trying to add edges", stats.UnitDimensionless)
+	statSkippedSpans = stats.Int64("skipped_spans", "Number of spans dropped when they are miss service.name attribute", stats.UnitDimensionless)
 	statTotalEdges   = stats.Int64("total_edges", "Total number of unique edges", stats.UnitDimensionless)
 	statExpiredEdges = stats.Int64("expired_edges", "Number of edges that expired before finding its matching span", stats.UnitDimensionless)
 )
