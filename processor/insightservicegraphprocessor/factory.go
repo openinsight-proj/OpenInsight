@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
+package insightservicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor"
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor/internal/store"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -27,7 +27,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr   = "service_graph"
+	typeStr   = "insight_service_graph"
 	stability = component.StabilityLevelBeta
 )
 
