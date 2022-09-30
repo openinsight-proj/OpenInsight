@@ -80,7 +80,7 @@ func parseBody(response *esapi.Response) (*SearchResult, error) {
 	}
 	if err := json.Unmarshal(ioBytes, &ret); err != nil {
 		ret.Header = response.Header
-		return nil, err
+		return ret, err
 	}
 	return ret, nil
 }

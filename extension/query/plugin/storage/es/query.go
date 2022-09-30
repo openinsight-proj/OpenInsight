@@ -26,13 +26,14 @@ func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (ptra
 
 func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) ([]*ptrace.Span, error) {
 
-	//TODO:
 	qsl := buildQuery(query)
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
 	if err != nil {
 		return nil, err
 	}
 
+	//TODO:
+	// convert es documents into otlp.span
 	log.Printf("total hosts: %d", len(res.Hits.Hits))
 	return nil, nil
 }
