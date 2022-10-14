@@ -1,9 +1,9 @@
-FROM alpine:3.13 as certs
-RUN apk --update add ca-certificates
-
-FROM alpine:3.13 as builder
+FROM golang:1.17-buster AS builder
 COPY . .
 RUN make install-tools && make build-otelcol
+
+FROM alpine:3.13 as certs
+RUN apk --update add ca-certificates
 
 FROM alpine:3.13 AS otelcol-contrib
 COPY --from=builder cmd/otelcol-contrib /otelcol-contrib
