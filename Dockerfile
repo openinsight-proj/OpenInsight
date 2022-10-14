@@ -1,6 +1,6 @@
 FROM golang:1.18-buster AS builder
 COPY . .
-RUN GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.62.0 \
+RUN go install go.opentelemetry.io/collector/cmd/builder@v0.62.0 \
     && builder --output-path=cmd/ --config=builder/otelcol-builder.yaml
 
 FROM alpine:3.13 as certs
