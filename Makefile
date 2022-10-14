@@ -27,7 +27,7 @@ all-modules:
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.61.0
+	GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.62.0
 
 # Build the Collector executable.
 .PHONY: build-otelcol
