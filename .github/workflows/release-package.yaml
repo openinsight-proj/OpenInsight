@@ -52,10 +52,6 @@ jobs:
           password: ${{ secrets.ACTIONS_TOKEN }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
       - name: Set up opentelemetry collector builder
         run: GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.0
       - name: Set up Docker Buildx
