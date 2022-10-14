@@ -19,7 +19,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "otelcol-contrib",
 		Description: "OpenInsight. You know, OpenTelemetry Collector enhancement distribution",
-		Version:     "v0.61.0",
+		Version:     "v0.62.0",
 	}
 
 	if err := run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {

@@ -1,13 +1,15 @@
 package es
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/aquasecurity/esquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"log"
+	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
+	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 )
 
 type ElasticsearchQuery struct {
@@ -17,14 +19,11 @@ type ElasticsearchQuery struct {
 	MetricsIndex string
 }
 
-type OtlpSpan struct {
+func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
+	return &v1_trace.TracesData{}, nil
 }
 
-func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (ptrace.Span, error) {
-	return ptrace.Span{}, nil
-}
-
-func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) ([]*ptrace.Span, error) {
+func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
 	qsl := buildQuery(query)
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
@@ -32,17 +31,14 @@ func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.Trac
 		return nil, err
 	}
 
-	//TODO:
-	// convert es documents into otlp.span
-	log.Printf("total hosts: %d", len(res.Hits.Hits))
+	return q.documentsConvert(res.Hits)
+}
+
+func (q *ElasticsearchQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
-func (q *ElasticsearchQuery) FindLogs(ctx context.Context) ([]*plog.Logs, error) {
-	return nil, nil
-}
-
-func (q *ElasticsearchQuery) GetLog(ctx context.Context) ([]*plog.LogRecord, error) {
+func (q *ElasticsearchQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
@@ -97,4 +93,43 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 	}
 
 	return q
+}
+
+func (q *ElasticsearchQuery) documentsConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {
+	traceData := &v1_trace.TracesData{}
+	spans := make([]*v1_trace.Span, len(searchHits.Hits))
+	for i, hit := range searchHits.Hits {
+		spanMaps := make(map[string]interface{})
+		d := json.NewDecoder(bytes.NewReader(*hit.Source))
+		d.UseNumber()
+		if err := d.Decode(&spanMaps); err != nil {
+			typeErr := err.(*json.UnmarshalTypeError)
+			fmt.Print(typeErr.Field)
+			return nil, err
+		}
+
+		span := v1_trace.Span{}
+		for k, v := range spanMaps {
+			switch k {
+			//TODO: make more sense
+			case "Name":
+				span.Name = v.(string)
+			}
+		}
+		spans[i] = &span
+
+		rs := []*v1_trace.ResourceSpans{
+			{
+				Resource: nil,
+				ScopeSpans: []*v1_trace.ScopeSpans{
+					{
+						Spans: spans,
+					},
+				},
+				SchemaUrl: "",
+			},
+		}
+		traceData.ResourceSpans = rs
+	}
+	return traceData, nil
 }

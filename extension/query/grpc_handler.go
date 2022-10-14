@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/tracing/v1alpha1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	v1 "go.opentelemetry.io/proto/otlp/trace/v1"
 	"go.uber.org/zap"
 )
 
@@ -35,9 +36,10 @@ func (t *Handler) GetOperations(context.Context, *v1alpha1.GetOperationsRequest)
 }
 
 // find traces by params
-func (t *Handler) FindTraces(ctx context.Context, request *v1alpha1.FindTracesRequest) (*v1alpha1.SpansResponseChunk, error) {
+func (t *Handler) FindTraces(ctx context.Context, request *v1alpha1.FindTracesRequest) (*v1.TracesData, error) {
 
-	_, err := t.QueryService.tracingQuerySvc.FindTraces(ctx, &storage.TraceQueryParameters{
+	traces, err := t.QueryService.tracingQuerySvc.FindTraces(ctx, &storage.TraceQueryParameters{
+		//TODO:
 		//ServiceName:   request.Query.ServiceName,
 		//OperationName: request.Query.OperationName,
 		//Tags:          request.Query.Attributes,
@@ -50,11 +52,12 @@ func (t *Handler) FindTraces(ctx context.Context, request *v1alpha1.FindTracesRe
 	if err != nil {
 		zap.S().Errorf("query tracing failed: $s", zap.Error(err))
 	}
-	return &v1alpha1.SpansResponseChunk{}, nil
+
+	return traces, nil
 }
 
-func (t *Handler) GetTrace(ctx context.Context, request *v1alpha1.GetTraceRequest) (*v1alpha1.SpansResponseChunk, error) {
-	return &v1alpha1.SpansResponseChunk{}, nil
+func (t *Handler) GetTrace(ctx context.Context, request *v1alpha1.GetTraceRequest) (*v1.TracesData, error) {
+	return &v1.TracesData{}, nil
 }
 
 func (t *Handler) GetServices(ctx context.Context, _ *v1alpha1.GetServicesRequest) (*v1alpha1.GetServicesResponse, error) {

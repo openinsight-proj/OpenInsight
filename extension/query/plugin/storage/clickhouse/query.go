@@ -3,24 +3,24 @@ package clickhouse
 import (
 	"context"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
+	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 )
 
 type ClickHouseQuery struct {
 }
 
-func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (ptrace.Span, error) {
-	return ptrace.Span{}, nil
+func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
+	return &v1_trace.TracesData{}, nil
 }
 
-func (q *ClickHouseQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) ([]*ptrace.Span, error) {
+func (q *ClickHouseQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 	return nil, nil
 }
 
-func (q *ClickHouseQuery) FindLogs(ctx context.Context) ([]*plog.Logs, error) {
+func (q *ClickHouseQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
-func (q *ClickHouseQuery) GetLog(ctx context.Context) ([]*plog.LogRecord, error) {
+func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
