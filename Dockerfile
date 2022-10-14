@@ -1,13 +1,13 @@
-FROM golang:1.18-buster AS builder
+FROM golang:1.18 AS builder
+WORKDIR /build
 COPY . .
-RUN go install go.opentelemetry.io/collector/cmd/builder@v0.62.0 \
-    && builder --output-path=cmd/ --config=builder/otelcol-builder.yaml
+RUN make install-tools && make build-otelcol
 
 FROM alpine:3.13 as certs
 RUN apk --update add ca-certificates
 
 FROM alpine:3.13 AS otelcol-contrib
-COPY --from=builder cmd/otelcol-contrib /otelcol-contrib
+COPY --from=builder build/cmd/otelcol-contrib /otelcol-contrib
 # Note that this shouldn't be necessary, but in some cases the file seems to be
 # copied with the execute bit lost (see #1317)
 RUN chmod 755 /otelcol-contrib
