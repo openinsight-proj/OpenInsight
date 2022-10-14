@@ -3,7 +3,7 @@ RUN apk --update add ca-certificates
 
 FROM alpine:3.13 as builder
 COPY . .
-RUN make build-otelcol
+RUN make install-tools && make build-otelcol
 
 FROM alpine:3.13 AS otelcol-contrib
 COPY --from=builder cmd/otelcol-contrib /otelcol-contrib
