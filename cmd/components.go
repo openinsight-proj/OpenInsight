@@ -8,7 +8,6 @@ import (
 	awsemfexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	awskinesisexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 	awsxrayexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
-	azuredataexplorerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	azuremonitorexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	carbonexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	clickhouseexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
@@ -66,7 +65,6 @@ import (
 	filterprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	groupbyattrsprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 	groupbytraceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
-	insightservicegraphprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor"
 	k8sattributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	metricsgenerationprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 	metricstransformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
@@ -258,7 +256,6 @@ func components() (component.Factories, error) {
 		awsemfexporter.NewFactory(),
 		awskinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
-		azuredataexplorerexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
 		carbonexporter.NewFactory(),
 		clickhouseexporter.NewFactory(),
@@ -320,7 +317,6 @@ func components() (component.Factories, error) {
 		spanprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
-		insightservicegraphprocessor.NewFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err

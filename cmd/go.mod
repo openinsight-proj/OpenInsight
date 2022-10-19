@@ -10,7 +10,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.62.0
@@ -68,7 +67,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.62.0
@@ -144,7 +142,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.62.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.62.1
+	go.opentelemetry.io/collector v0.62.0
 	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
 )
 
@@ -166,19 +164,12 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14 // indirect
 	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
-	github.com/Azure/azure-kusto-go v0.8.1 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
-	github.com/Azure/azure-storage-queue-go v0.0.0-20191125232315-636801874cdd // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11 // indirect
-	github.com/Azure/go-autorest/autorest/azure/cli v0.4.5 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
@@ -276,7 +267,6 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/digitalocean/godo v1.82.0 // indirect
-	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.18+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
@@ -319,7 +309,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
-	github.com/gofrs/uuid v4.2.0+incompatible // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gogo/status v1.1.0 // indirect
@@ -395,7 +385,6 @@ require (
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
-	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leoluk/perflib_exporter v0.2.0 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
@@ -557,8 +546,8 @@ require (
 	go.mongodb.org/atlas v0.17.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.62.1 // indirect
-	go.opentelemetry.io/collector/semconv v0.62.1 // indirect
+	go.opentelemetry.io/collector/pdata v0.62.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.62.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.10.0 // indirect
@@ -613,8 +602,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.62.0 => /Users/tanjian/gitprojects/github/OpenInsight/extension/query
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor v0.62.0 => /Users/tanjian/gitprojects/github/OpenInsight/processor/insightservicegraphprocessor
 
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
 

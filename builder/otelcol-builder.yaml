@@ -8,9 +8,9 @@ dist:
 
 extensions:
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - import: go.opentelemetry.io/collector/extension/ballastextension
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.62.0
@@ -32,17 +32,16 @@ extensions:
 
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - import: go.opentelemetry.io/collector/exporter/otlpexporter
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - import: go.opentelemetry.io/collector/exporter/otlphttpexporter
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.62.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.62.0
@@ -81,7 +80,7 @@ exporters:
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.62.0
@@ -147,9 +146,9 @@ receivers:
 
 processors:
   - import: go.opentelemetry.io/collector/processor/batchprocessor
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - import: go.opentelemetry.io/collector/processor/memorylimiterprocessor
-    gomod: go.opentelemetry.io/collector v0.62.1
+    gomod: go.opentelemetry.io/collector v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.62.0
@@ -168,8 +167,6 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.62.0
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor v0.62.0"
-    path: "./processor/insightservicegraphprocessor"
 
 # When adding a replace, add a comment before it to document why it's needed and when it can be removed
 replaces:
