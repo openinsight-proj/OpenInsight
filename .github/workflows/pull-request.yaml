@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: build-packages
+name: check-packages
 
 on:
   pull_request:
