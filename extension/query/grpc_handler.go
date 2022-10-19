@@ -50,7 +50,7 @@ func (t *Handler) FindTraces(ctx context.Context, request *v1alpha1.FindTracesRe
 		//NumTraces: int(request.Query.NumTraces),
 	})
 	if err != nil {
-		zap.S().Errorf("query tracing failed: $s", zap.Error(err))
+		zap.S().Errorf("query tracing failed: %s", zap.Error(err).String)
 	}
 
 	return traces, nil

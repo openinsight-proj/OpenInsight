@@ -8,8 +8,17 @@ import (
 	"github.com/aquasecurity/esquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
+	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
+	"go.uber.org/zap"
+	"strings"
+	"time"
+)
+
+const (
+	DATE_LAYOUT = "2006-01-02T15:04:05.000000000Z"
 )
 
 type ElasticsearchQuery struct {
@@ -31,7 +40,7 @@ func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.Trac
 		return nil, err
 	}
 
-	return q.documentsConvert(res.Hits)
+	return DocumentsConvert(res.Hits)
 }
 
 func (q *ElasticsearchQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
@@ -95,41 +104,73 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 	return q
 }
 
-func (q *ElasticsearchQuery) documentsConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {
-	traceData := &v1_trace.TracesData{}
-	spans := make([]*v1_trace.Span, len(searchHits.Hits))
+func DocumentsConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {
+	rSpans := make([]*v1_trace.ResourceSpans, len(searchHits.Hits))
+
 	for i, hit := range searchHits.Hits {
-		spanMaps := make(map[string]interface{})
+		rSpansMaps := make(map[string]interface{})
 		d := json.NewDecoder(bytes.NewReader(*hit.Source))
 		d.UseNumber()
-		if err := d.Decode(&spanMaps); err != nil {
+		if err := d.Decode(&rSpansMaps); err != nil {
 			typeErr := err.(*json.UnmarshalTypeError)
-			fmt.Print(typeErr.Field)
+			zap.S().Errorf("failed to decode  searchHits %s and typeErr: %s", zap.Error(err).String, typeErr.Field)
 			return nil, err
 		}
 
 		span := v1_trace.Span{}
-		for k, v := range spanMaps {
+		resource := v1_resource.Resource{}
+		var sAttributes []*v1_common.KeyValue
+		var rAttributes []*v1_common.KeyValue
+		for k, v := range rSpansMaps {
 			switch k {
-			//TODO: make more sense
+			case "TraceId":
+				span.TraceId = []byte(v.(string))
 			case "Name":
 				span.Name = v.(string)
+			case "EndTimestamp":
+				t, err := time.Parse(DATE_LAYOUT, v.(string))
+				if err != nil {
+					zap.S().Errorf("failed to parse endtimestamp %s", zap.Error(err).String)
+				}
+				span.EndTimeUnixNano = uint64(t.UnixNano())
+			case "@timestamp":
+				t, err := time.Parse(DATE_LAYOUT, v.(string))
+				if err != nil {
+					zap.S().Errorf("failed to parse @timestamp %s", zap.Error(err).String)
+				}
+				span.StartTimeUnixNano = uint64(t.UnixNano())
+			case "ParentSpanId":
+				span.ParentSpanId = []byte(v.(string))
+			case "SpanId":
+				span.SpanId = []byte(v.(string))
+			}
+
+			if strings.Contains(k, "Attributes.") {
+				sAttributes = append(sAttributes, &v1_common.KeyValue{
+					Key:   strings.TrimPrefix(k, "Attributes."),
+					Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_StringValue{StringValue: fmt.Sprint(v)}},
+				})
+			}
+
+			if strings.Contains(k, "Resource.") {
+				rAttributes = append(rAttributes, &v1_common.KeyValue{
+					Key:   strings.TrimPrefix(k, "Resource."),
+					Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_StringValue{StringValue: fmt.Sprint(v)}},
+				})
 			}
 		}
-		spans[i] = &span
 
-		rs := []*v1_trace.ResourceSpans{
-			{
-				Resource: nil,
-				ScopeSpans: []*v1_trace.ScopeSpans{
-					{
-						Spans: spans,
-					},
+		span.Attributes = sAttributes
+		resource.Attributes = rAttributes
+
+		rSpans[i] = &v1_trace.ResourceSpans{
+			Resource: &resource,
+			ScopeSpans: []*v1_trace.ScopeSpans{
+				{
+					Spans: []*v1_trace.Span{&span},
 				},
-				SchemaUrl: "",
 			},
 		}
-		traceData.ResourceSpans = rs
 	}
-	return traceData, nil
+	return &v1_trace.TracesData{ResourceSpans: rSpans}, nil
 }
