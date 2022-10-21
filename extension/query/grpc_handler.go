@@ -2,26 +2,11 @@ package query
 
 import (
 	"context"
-	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/tracing/v1alpha1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1 "go.opentelemetry.io/proto/otlp/trace/v1"
 	"go.uber.org/zap"
-)
-
-const (
-	defaultQueryLimit = 100
-
-	serviceParam               = "service"
-	tracingK8sNamespaceNameTag = "k8s.namespace.name"
-	tracingK8sClusterUIdTag    = "k8s.cluster.id"
-)
-
-var (
-	errServiceParameterRequired = fmt.Errorf("parameter '%s' is required", serviceParam)
-	errParsTime                 = fmt.Errorf("start or end time must be 2006-01-02T15:04:05.000Z like string")
-	errParsDuration             = fmt.Errorf("duration must be like 10ns 300ms or 1m")
 )
 
 type Handler struct {
