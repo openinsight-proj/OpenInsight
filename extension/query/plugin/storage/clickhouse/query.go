@@ -14,11 +14,11 @@ func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_tra
 	return &v1_trace.TracesData{}, nil
 }
 
-func (q *ClickHouseQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
+func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 	return nil, nil
 }
 
-func (q *ClickHouseQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
+func (q *ClickHouseQuery) SearchLogs(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {

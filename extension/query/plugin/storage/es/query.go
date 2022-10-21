@@ -17,6 +17,10 @@ import (
 	"time"
 )
 
+var (
+	errParsTime = fmt.Errorf("start time must before endtime")
+)
+
 const (
 	DATE_LAYOUT = "2006-01-02T15:04:05.000000000Z"
 )
@@ -32,9 +36,9 @@ func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_
 	return &v1_trace.TracesData{}, nil
 }
 
-func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
+func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
-	qsl := buildQuery(query)
+	qsl, err := buildQuery(query)
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
 	if err != nil {
 		return nil, err
@@ -43,7 +47,7 @@ func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.Trac
 	return DocumentsConvert(res.Hits)
 }
 
-func (q *ElasticsearchQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
+func (q *ElasticsearchQuery) SearchLogs(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
@@ -52,7 +56,7 @@ func (q *ElasticsearchQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, err
 }
 
 // Build the request body.
-func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
+func buildQuery(params *storage.TraceQueryParameters) (*esquery.SearchRequest, error) {
 	//{
 	//  "size": 20,
 	//  "query": {
@@ -94,6 +98,31 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 	if params.OperationName != "" {
 		boolQ.Must(esquery.Term("Name", params.OperationName))
 	}
+
+	if !params.StartTime.IsZero() && params.EndTime.IsZero() {
+		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.UTC().String()))
+	}
+
+	if params.StartTime.IsZero() && !params.EndTime.IsZero() {
+		boolQ.Must(esquery.Range("@timestamp").Lte(params.EndTime.UTC().String()))
+	}
+
+	if !params.StartTime.IsZero() && !params.EndTime.IsZero() && params.StartTime.Before(params.EndTime) {
+		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.UTC().String()).Lte(params.EndTime.UTC().String()))
+	} else {
+		return q, errParsTime
+	}
+
+	if len(params.Tags) > 0 {
+		for k, v := range params.Tags {
+			boolQ.Must(esquery.Term(k, v))
+		}
+	}
+
+	if params.DurationMin != nil {
+		//TODO: do not support duration filters.
+	}
+
 	q.Query(boolQ)
 	if params.NumTraces > 0 {
 		q.Size(uint64(params.NumTraces))
@@ -101,7 +130,7 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 		q.Size(uint64(20))
 	}
 
-	return q
+	return q, nil
 }
 
 func DocumentsConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {

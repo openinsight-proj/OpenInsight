@@ -10,8 +10,8 @@ import (
 
 type Query interface {
 	GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error)
-	FindTraces(ctx context.Context, query *TraceQueryParameters) (*v1_trace.TracesData, error)
-	FindLogs(ctx context.Context) (*v1_logs.LogsData, error)
+	SearchTraces(ctx context.Context, query *TraceQueryParameters) (*v1_trace.TracesData, error)
+	SearchLogs(ctx context.Context) (*v1_logs.LogsData, error)
 	GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 
 	//TODO: add metrics query.

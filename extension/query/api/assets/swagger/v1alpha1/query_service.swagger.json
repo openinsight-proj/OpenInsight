@@ -16,7 +16,30 @@
     "application/json"
   ],
   "paths": {
-    "/apis/tracing/v1alpha1/operations": {
+    "/apis/logs/v1alpha1/logging": {
+      "get": {
+        "summary": "SearchTraces searches for traces.\nSee GetTrace for JSON unmarshalling.",
+        "operationId": "QueryService_SearchLogs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LogsData"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "QueryService"
+        ]
+      }
+    },
+    "/apis/traces/v1alpha1/operations": {
       "get": {
         "summary": "GetOperations returns operation names.",
         "operationId": "QueryService_GetOperations",
@@ -55,7 +78,7 @@
         ]
       }
     },
-    "/apis/tracing/v1alpha1/services": {
+    "/apis/traces/v1alpha1/services": {
       "get": {
         "summary": "GetServices returns service names.",
         "operationId": "QueryService_GetServices",
@@ -78,10 +101,10 @@
         ]
       }
     },
-    "/apis/tracing/v1alpha1/trace": {
+    "/apis/traces/v1alpha1/trace": {
       "get": {
-        "summary": "FindTraces searches for traces.\nSee GetTrace for JSON unmarshalling.",
-        "operationId": "QueryService_FindTraces",
+        "summary": "SearchTraces searches for traces.\nSee GetTrace for JSON unmarshalling.",
+        "operationId": "QueryService_SearchTraces",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -153,7 +176,7 @@
         ]
       }
     },
-    "/apis/tracing/v1alpha1/trace/{traceId}": {
+    "/apis/traces/v1alpha1/trace/{traceId}": {
       "get": {
         "summary": "GetTrace returns a single trace.\nNote that the JSON response over HTTP is wrapped into result envelope \"{\"result\": ...}\"\nIt means that the JSON response cannot be directly unmarshalled using JSONPb.\nThis can be fixed by first parsing into user-defined envelope with standard JSON library\nor string manipulation to remove the envelope. Alternatively generate objects using OpenAPI.",
         "operationId": "QueryService_GetTrace",
@@ -402,6 +425,73 @@
       },
       "description": "KeyValueList is a list of KeyValue messages. We need KeyValueList as a message\nsince `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need\na list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to\navoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches\nare semantically equivalent."
     },
+    "v1LogRecord": {
+      "type": "object",
+      "properties": {
+        "timeUnixNano": {
+          "type": "string",
+          "format": "uint64",
+          "description": "time_unix_nano is the time when the event occurred.\nValue is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.\nValue of 0 indicates unknown or missing timestamp."
+        },
+        "observedTimeUnixNano": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Time when the event was observed by the collection system.\nFor events that originate in OpenTelemetry (e.g. using OpenTelemetry Logging SDK)\nthis timestamp is typically set at the generation time and is equal to Timestamp.\nFor events originating externally and collected by OpenTelemetry (e.g. using\nCollector) this is the time when OpenTelemetry's code observed the event measured\nby the clock of the OpenTelemetry code. This field MUST be set once the event is\nobserved by OpenTelemetry.\n\nFor converting OpenTelemetry log data to formats that support only one timestamp or\nwhen receiving OpenTelemetry log data by recipients that support only one timestamp\ninternally the following logic is recommended:\n  - Use time_unix_nano if it is present, otherwise use observed_time_unix_nano.\n\nValue is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.\nValue of 0 indicates unknown or missing timestamp."
+        },
+        "severityNumber": {
+          "$ref": "#/definitions/v1SeverityNumber",
+          "description": "Numerical value of the severity, normalized to values described in Log Data Model.\n[Optional]."
+        },
+        "severityText": {
+          "type": "string",
+          "description": "The severity text (also known as log level). The original string representation as\nit is known at the source. [Optional]."
+        },
+        "body": {
+          "$ref": "#/definitions/v1AnyValue",
+          "description": "A value containing the body of the log record. Can be for example a human-readable\nstring message (including multi-line) describing the event in a free form or it can\nbe a structured data composed of arrays and maps of other values. [Optional]."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1KeyValue"
+          },
+          "description": "Additional attributes that describe the specific event occurrence. [Optional].\nAttribute keys MUST be unique (it is not allowed to have more than one\nattribute with the same key)."
+        },
+        "droppedAttributesCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "flags": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Flags, a bit field. 8 least significant bits are the trace flags as\ndefined in W3C Trace Context specification. 24 most significant bits are reserved\nand must be set to 0. Readers must not assume that 24 most significant bits\nwill be zero and must correctly mask the bits when reading 8-bit trace flag (use\nflags \u0026 TRACE_FLAGS_MASK). [Optional]."
+        },
+        "traceId": {
+          "type": "string",
+          "format": "byte",
+          "description": "A unique identifier for a trace. All logs from the same trace share\nthe same `trace_id`. The ID is a 16-byte array. An ID with all zeroes\nis considered invalid. Can be set for logs that are part of request processing\nand have an assigned trace id. [Optional]."
+        },
+        "spanId": {
+          "type": "string",
+          "format": "byte",
+          "description": "A unique identifier for a span within a trace, assigned when the span\nis created. The ID is an 8-byte array. An ID with all zeroes is considered\ninvalid. Can be set for logs that are part of a particular processing span.\nIf span_id is present trace_id SHOULD be also present. [Optional]."
+        }
+      },
+      "title": "A log record according to OpenTelemetry Log Data Model:\nhttps://github.com/open-telemetry/oteps/blob/main/text/logs/0097-log-data-model.md"
+    },
+    "v1LogsData": {
+      "type": "object",
+      "properties": {
+        "resourceLogs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ResourceLogs"
+          },
+          "description": "An array of ResourceLogs.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
+        }
+      },
+      "description": "LogsData represents the logs data that can be stored in a persistent storage,\nOR can be embedded by other protocols that transfer OTLP logs data but do not\nimplement the OTLP protocol.\n\nThe main difference between this message and collector protocol is that\nin this message there will not be any \"control\" or \"metadata\" specific to\nOTLP protocol.\n\nWhen new fields are added into this message, the OTLP request MUST be updated\nas well."
+    },
     "v1Resource": {
       "type": "object",
       "properties": {
@@ -419,6 +509,27 @@
         }
       },
       "description": "Resource information."
+    },
+    "v1ResourceLogs": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "$ref": "#/definitions/v1Resource",
+          "description": "The resource for the logs in this message.\nIf this field is not set then resource info is unknown."
+        },
+        "scopeLogs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ScopeLogs"
+          },
+          "description": "A list of ScopeLogs that originate from a resource."
+        },
+        "schemaUrl": {
+          "type": "string",
+          "description": "This schema_url applies to the data in the \"resource\" field. It does not apply\nto the data in the \"scope_logs\" field which have their own schema_url field."
+        }
+      },
+      "description": "A collection of ScopeLogs from a Resource."
     },
     "v1ResourceSpans": {
       "type": "object",
@@ -441,6 +552,27 @@
       },
       "description": "A collection of ScopeSpans from a Resource."
     },
+    "v1ScopeLogs": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/definitions/v1InstrumentationScope",
+          "description": "The instrumentation scope information for the logs in this message.\nSemantically when InstrumentationScope isn't set, it is equivalent with\nan empty instrumentation scope name (unknown)."
+        },
+        "logRecords": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1LogRecord"
+          },
+          "description": "A list of log records."
+        },
+        "schemaUrl": {
+          "type": "string",
+          "description": "This schema_url applies to all logs in the \"logs\" field."
+        }
+      },
+      "description": "A collection of Logs produced by a Scope."
+    },
     "v1ScopeSpans": {
       "type": "object",
       "properties": {
@@ -461,6 +593,38 @@
         }
       },
       "description": "A collection of Spans produced by an InstrumentationScope."
+    },
+    "v1SeverityNumber": {
+      "type": "string",
+      "enum": [
+        "SEVERITY_NUMBER_UNSPECIFIED",
+        "SEVERITY_NUMBER_TRACE",
+        "SEVERITY_NUMBER_TRACE2",
+        "SEVERITY_NUMBER_TRACE3",
+        "SEVERITY_NUMBER_TRACE4",
+        "SEVERITY_NUMBER_DEBUG",
+        "SEVERITY_NUMBER_DEBUG2",
+        "SEVERITY_NUMBER_DEBUG3",
+        "SEVERITY_NUMBER_DEBUG4",
+        "SEVERITY_NUMBER_INFO",
+        "SEVERITY_NUMBER_INFO2",
+        "SEVERITY_NUMBER_INFO3",
+        "SEVERITY_NUMBER_INFO4",
+        "SEVERITY_NUMBER_WARN",
+        "SEVERITY_NUMBER_WARN2",
+        "SEVERITY_NUMBER_WARN3",
+        "SEVERITY_NUMBER_WARN4",
+        "SEVERITY_NUMBER_ERROR",
+        "SEVERITY_NUMBER_ERROR2",
+        "SEVERITY_NUMBER_ERROR3",
+        "SEVERITY_NUMBER_ERROR4",
+        "SEVERITY_NUMBER_FATAL",
+        "SEVERITY_NUMBER_FATAL2",
+        "SEVERITY_NUMBER_FATAL3",
+        "SEVERITY_NUMBER_FATAL4"
+      ],
+      "default": "SEVERITY_NUMBER_UNSPECIFIED",
+      "description": "Possible values for LogRecord.SeverityNumber.\n\n - SEVERITY_NUMBER_UNSPECIFIED: UNSPECIFIED is the default SeverityNumber, it MUST NOT be used."
     },
     "v1Span": {
       "type": "object",
