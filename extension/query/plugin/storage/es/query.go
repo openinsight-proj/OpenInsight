@@ -1,13 +1,24 @@
 package es
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/aquasecurity/esquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"log"
+	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
+	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
+	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
+	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
+	"go.uber.org/zap"
+	"strings"
+	"time"
+)
+
+const (
+	DATE_LAYOUT = "2006-01-02T15:04:05.000000000Z"
 )
 
 type ElasticsearchQuery struct {
@@ -17,14 +28,11 @@ type ElasticsearchQuery struct {
 	MetricsIndex string
 }
 
-type OtlpSpan struct {
+func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
+	return &v1_trace.TracesData{}, nil
 }
 
-func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (ptrace.Span, error) {
-	return ptrace.Span{}, nil
-}
-
-func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) ([]*ptrace.Span, error) {
+func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
 	qsl := buildQuery(query)
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
@@ -32,17 +40,14 @@ func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.Trac
 		return nil, err
 	}
 
-	//TODO:
-	// convert es documents into otlp.span
-	log.Printf("total hosts: %d", len(res.Hits.Hits))
+	return DocumentsConvert(res.Hits)
+}
+
+func (q *ElasticsearchQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
-func (q *ElasticsearchQuery) FindLogs(ctx context.Context) ([]*plog.Logs, error) {
-	return nil, nil
-}
-
-func (q *ElasticsearchQuery) GetLog(ctx context.Context) ([]*plog.LogRecord, error) {
+func (q *ElasticsearchQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
@@ -97,4 +102,75 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 	}
 
 	return q
+}
+
+func DocumentsConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {
+	rSpans := make([]*v1_trace.ResourceSpans, len(searchHits.Hits))
+
+	for i, hit := range searchHits.Hits {
+		rSpansMaps := make(map[string]interface{})
+		d := json.NewDecoder(bytes.NewReader(*hit.Source))
+		d.UseNumber()
+		if err := d.Decode(&rSpansMaps); err != nil {
+			typeErr := err.(*json.UnmarshalTypeError)
+			zap.S().Errorf("failed to decode  searchHits %s and typeErr: %s", zap.Error(err).String, typeErr.Field)
+			return nil, err
+		}
+
+		span := v1_trace.Span{}
+		resource := v1_resource.Resource{}
+		var sAttributes []*v1_common.KeyValue
+		var rAttributes []*v1_common.KeyValue
+		for k, v := range rSpansMaps {
+			switch k {
+			case "TraceId":
+				span.TraceId = []byte(v.(string))
+			case "Name":
+				span.Name = v.(string)
+			case "EndTimestamp":
+				t, err := time.Parse(DATE_LAYOUT, v.(string))
+				if err != nil {
+					zap.S().Errorf("failed to parse endtimestamp %s", zap.Error(err).String)
+				}
+				span.EndTimeUnixNano = uint64(t.UnixNano())
+			case "@timestamp":
+				t, err := time.Parse(DATE_LAYOUT, v.(string))
+				if err != nil {
+					zap.S().Errorf("failed to parse @timestamp %s", zap.Error(err).String)
+				}
+				span.StartTimeUnixNano = uint64(t.UnixNano())
+			case "ParentSpanId":
+				span.ParentSpanId = []byte(v.(string))
+			case "SpanId":
+				span.SpanId = []byte(v.(string))
+			}
+
+			if strings.Contains(k, "Attributes.") {
+				sAttributes = append(sAttributes, &v1_common.KeyValue{
+					Key:   strings.TrimPrefix(k, "Attributes."),
+					Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_StringValue{StringValue: fmt.Sprint(v)}},
+				})
+			}
+
+			if strings.Contains(k, "Resource.") {
+				rAttributes = append(rAttributes, &v1_common.KeyValue{
+					Key:   strings.TrimPrefix(k, "Resource."),
+					Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_StringValue{StringValue: fmt.Sprint(v)}},
+				})
+			}
+		}
+
+		span.Attributes = sAttributes
+		resource.Attributes = rAttributes
+
+		rSpans[i] = &v1_trace.ResourceSpans{
+			Resource: &resource,
+			ScopeSpans: []*v1_trace.ScopeSpans{
+				{
+					Spans: []*v1_trace.Span{&span},
+				},
+			},
+		}
+	}
+	return &v1_trace.TracesData{ResourceSpans: rSpans}, nil
 }

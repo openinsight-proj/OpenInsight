@@ -85,7 +85,7 @@ service QueryService {
   // It means that the JSON response cannot be directly unmarshalled using JSONPb.
   // This can be fixed by first parsing into user-defined envelope with standard JSON library
   // or string manipulation to remove the envelope. Alternatively generate objects using OpenAPI.
-  rpc GetTrace(GetTraceRequest) returns (SpansResponseChunk) {
+  rpc GetTrace(GetTraceRequest) returns (opentelemetry.proto.trace.v1.TracesData) {
     option (google.api.http) = {
       get:"/apis/tracing/v1alpha1/trace/{trace_id}"
     };
@@ -93,7 +93,7 @@ service QueryService {
 
   // FindTraces searches for traces.
   // See GetTrace for JSON unmarshalling.
-  rpc FindTraces(FindTracesRequest) returns (SpansResponseChunk) {
+  rpc FindTraces(FindTracesRequest) returns (opentelemetry.proto.trace.v1.TracesData) {
     option (google.api.http) = {
       get:"/apis/tracing/v1alpha1/trace"
     };

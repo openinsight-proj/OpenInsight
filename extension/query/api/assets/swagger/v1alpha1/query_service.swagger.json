@@ -86,7 +86,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1SpansResponseChunk"
+              "$ref": "#/definitions/v1TracesData"
             }
           },
           "default": {
@@ -161,7 +161,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1SpansResponseChunk"
+              "$ref": "#/definitions/v1TracesData"
             }
           },
           "default": {
@@ -546,6 +546,19 @@
       },
       "description": "A Span represents a single operation performed by a single component of the system.\n\nThe next available field id is 17."
     },
+    "v1TracesData": {
+      "type": "object",
+      "properties": {
+        "resourceSpans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ResourceSpans"
+          },
+          "description": "An array of ResourceSpans.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
+        }
+      },
+      "description": "TracesData represents the traces data that can be stored in a persistent storage,\nOR can be embedded by other protocols that transfer OTLP traces data but do\nnot implement the OTLP protocol.\n\nThe main difference between this message and collector protocol is that\nin this message there will not be any \"control\" or \"metadata\" specific to\nOTLP protocol.\n\nWhen new fields are added into this message, the OTLP request MUST be updated\nas well."
+    },
     "v1alpha1GetOperationsResponse": {
       "type": "object",
       "properties": {
@@ -581,19 +594,6 @@
         }
       },
       "description": "Operation encapsulates information about operation."
-    },
-    "v1alpha1SpansResponseChunk": {
-      "type": "object",
-      "properties": {
-        "resourceSpans": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1ResourceSpans"
-          },
-          "title": "A list of OpenTelemetry ResourceSpans.\nIn case of JSON format the ids (trace_id, span_id, parent_id) are encoded in base64 even though OpenTelemetry specification\nmandates to use hex encoding [2].\nBase64 is chosen to keep compatibility with JSONPb codec.\n[1]: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto\n[2]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#otlphttp"
-        }
-      },
-      "description": "Response object with spans."
     },
     "v1alpha1TraceQueryParameters": {
       "type": "object",
