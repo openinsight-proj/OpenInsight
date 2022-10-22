@@ -38,9 +38,12 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	defaultCfg.(*Config).Storage.ClickhouseType = &clickhouse.ClickhouseType{
-		Dsn:     "tcp://127.0.0.1:9000?database=default",
-		Ttl:     3,
-		Timeout: "5s",
+		Dsn:              "tcp://127.0.0.1:9000?database=default",
+		Ttl:              3,
+		Timeout:          "5s",
+		LoggingTableName: "otel_logs",
+		TracingTableName: "otel_traces",
+		MetricsTableName: "otel_metrics",
 	}
 
 	r0 := cfg.Extensions[config.NewComponentID(typeStr)]

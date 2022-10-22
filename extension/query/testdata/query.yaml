@@ -14,6 +14,9 @@ extensions:
         dsn: tcp://127.0.0.1:9000?database=default
         ttl_days: 3
         timeout: 5s
+        tracing_table_name: otel_traces
+        logging_table_name: otel_logs
+        metrics_table_name: otel_metrics
     tracing_query:
       storage_type: elasticsearch
     logging_query:
