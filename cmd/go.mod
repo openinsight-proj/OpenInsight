@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.62.0
@@ -59,7 +59,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.62.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.62.0
@@ -68,7 +68,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.62.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor v0.62.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.62.0
@@ -613,11 +612,9 @@ require (
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.62.1 => /Users/tanjian/gitprojects/github/OpenInsight/extension/query
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.0 => /Users/tanjian/gitprojects/github/OpenInsight/extension/query
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.0.0 => /Users/tanjian/gitprojects/github/OpenInsight/exporter/clickhouseexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/insightservicegraphprocessor v0.62.1 => /Users/tanjian/gitprojects/github/OpenInsight/processor/insightservicegraphprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.62.0 => /Users/tanjian/gitprojects/github/OpenInsight/exporter/clickhouseexporter
 
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
 
