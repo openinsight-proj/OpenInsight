@@ -4,7 +4,7 @@ dist:
   #module: github.com/open-telemetry/opentelemetry-collector # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
   name: otelcol-contrib # the binary name. Optional.
   description: "OpenInsight. You know, OpenTelemetry Collector enhancement distribution" # a long name for the application. Optional.
-  version: 0.62.1
+  version: v0.62.1
 
 extensions:
   - import: go.opentelemetry.io/collector/extension/zpagesextension
@@ -45,7 +45,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.62.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.62.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.0.0
     path: "./exporter/clickhouseexporter"
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.62.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.62.0
