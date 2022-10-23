@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	"github.com/stretchr/testify/require"
@@ -11,12 +14,87 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-	"testing"
-	"time"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 func TestBuildQuery(t *testing.T) {
+	factory := NewFactory(&ct)
+	require.NotNil(t, factory)
 
+	err := factory.Initialize(&zap.Logger{})
+	require.NoError(t, err)
+
+	tests := []struct {
+		param storage.TraceQueryParameters
+	}{
+		{
+			param: storage.TraceQueryParameters{
+				ServiceName: "this service [9]",
+			},
+		},
+		{
+			param: storage.TraceQueryParameters{
+				ServiceName:   "this service [9]",
+				OperationName: "HTTP PUT",
+			},
+		},
+		{
+			param: storage.TraceQueryParameters{
+				ServiceName:   "this service [9]",
+				OperationName: "HTTP PUT",
+				Tags: map[string]string{
+					"Tag_a": "tag_a_value",
+					"Tag_b": "tag_b_value",
+				},
+			},
+		},
+		{
+			param: storage.TraceQueryParameters{
+				ServiceName:   "this service [9]",
+				OperationName: "HTTP PUT",
+				Tags: map[string]string{
+					"Tag_a": "tag_a_value",
+					"Tag_b": "tag_b_value",
+				},
+				StartTime: time.Now(),
+				EndTime:   time.Now().Add(time.Second * 3),
+			},
+		},
+		{
+			param: storage.TraceQueryParameters{
+				ServiceName:   "this service [9]",
+				OperationName: "HTTP PUT",
+				Tags: map[string]string{
+					"Tag_a": "tag_a_value",
+					"Tag_b": "tag_b_value",
+				},
+				StartTime:   time.Now(),
+				EndTime:     time.Now().Add(time.Second * 3),
+				DurationMin: durationpb.New(time.Millisecond * 20),
+				DurationMax: durationpb.New(time.Millisecond * 100),
+			},
+		},
+		{
+			param: storage.TraceQueryParameters{
+				ServiceName:   "this service [9]",
+				OperationName: "HTTP PUT",
+				Tags: map[string]string{
+					"Tag_a": "tag_a_value",
+					"Tag_b": "tag_b_value",
+				},
+				StartTime:   time.Now(),
+				EndTime:     time.Now().Add(time.Second * 3),
+				DurationMin: durationpb.New(time.Millisecond * 20),
+				DurationMax: durationpb.New(time.Millisecond * 100),
+				NumTraces:   20,
+			},
+		},
+	}
+	for _, c := range tests {
+		sql, err := buildQuery(&c.param, "otel_traces")
+		require.NoError(t, err)
+		require.NotNil(t, sql)
+	}
 }
 
 func TestSearchTraces(t *testing.T) {
@@ -29,29 +107,24 @@ func TestSearchTraces(t *testing.T) {
 	err = truncateTracesTable(factory.client)
 	require.NoError(t, err)
 
-	insertTracesDate(factory.client)
-
-	//defer func() {
-	//	deleteTracesTables(factory.client)
-	//}()
+	err = insertTracesDate(factory.client)
+	require.NoError(t, err)
 
 	query, err := factory.CreateSpanQuery()
 	require.NotNil(t, query)
 	require.NoError(t, err)
 
-	var req = storage.TraceQueryParameters{
-		ServiceName:   "",
-		OperationName: "",
-		Tags:          nil,
-		StartTime:     time.Time{},
-		EndTime:       time.Time{},
-		DurationMin:   nil,
-		DurationMax:   nil,
-		NumTraces:     0,
+	req := storage.TraceQueryParameters{
+		ServiceName: "this service [9]",
+		//2022-10-23 16:43:08
+		StartTime: time.Date(2022, 10, 23, 16, 43, 8, 0, time.Local),
+		//2022-10-23 16:43:14
+		EndTime: time.Date(2022, 10, 23, 16, 43, 14, 0, time.Local),
 	}
 	resp, err := query.SearchTraces(context.Background(), &req)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
+
 }
 
 const (
@@ -197,6 +270,8 @@ func insertTracesDate(conn clickhouse.Conn) error {
 func simpleTraces(count int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("Resource_Attributes_key_1", "value1")
+	rs.Resource().Attributes().PutStr("Resource_Attributes_key_2", "value2")
 	ss := rs.ScopeSpans().AppendEmpty()
 	for i := 0; i < count; i++ {
 		s := ss.Spans().AppendEmpty()
@@ -240,13 +315,28 @@ func simpleTraces(count int) ptrace.Traces {
 		link2.SetSpanID(uInt64ToSpanID(uint64(i)))
 		link2.TraceState().FromRaw("TraceState2")
 		link2.Attributes().PutStr("k2", "v2")
+
+		// span 2
+		s2 := ss.Spans().AppendEmpty()
+		s2.SetTraceID(uInt64ToTraceID(0, uint64(i)))
+		s2.SetSpanID(uInt64ToSpanID(uint64(3)))
+		s2.TraceState().FromRaw("TraceState")
+		s2.SetParentSpanID(uInt64ToSpanID(uint64(i)))
+		s2.SetName("span_name xxx/ccc")
+		s2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		s2.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Minute * 5)))
+		s2.Attributes().PutStr("service.name", fmt.Sprintf("this service [%d]", i))
+		s2.Attributes().PutStr("a1", "v1")
+		s2.Attributes().PutStr("a2", "v2")
+		s2.Status().SetCode(ptrace.StatusCodeOk)
+		s2.Status().SetMessage("sucess Message")
+
+		s2.SetDroppedAttributesCount(3)
+		s2.SetDroppedEventsCount(2)
+		s2.SetDroppedLinksCount(1)
 		time.Sleep(time.Second)
 	}
 	return traces
-}
-
-func deleteTracesTables(conn clickhouse.Conn) {
-	conn.Exec(context.Background(), "DROP TABLE otel.otel_traces")
 }
 
 func attributesToMap(attributes pcommon.Map) map[string]string {

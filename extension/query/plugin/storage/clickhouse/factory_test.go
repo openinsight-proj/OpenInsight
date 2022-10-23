@@ -1,9 +1,10 @@
 package clickhouse
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"testing"
 )
 
 var ct = ClickhouseType{

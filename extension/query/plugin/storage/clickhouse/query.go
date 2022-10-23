@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ClickHouse/clickhouse-go/v2"
+
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
+	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 	"go.uber.org/zap"
 )
@@ -58,7 +61,7 @@ func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.Trace
 		return nil, err
 	}
 	var result []TracesModel
-	if err := q.client.Select(ctx, &result, sql); err != nil {
+	if err = q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
 	}
 	return convertSpan(result), nil
@@ -71,11 +74,9 @@ func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 	return nil, nil
 }
 
-func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, error) {
-
-	//todo build SQL
-	// otel_traces_trace_id_ts -> tableName_trace_id_ts
-	base := `SELECT a.Timestamp,
+const (
+	SUBSQL  = "SELECT TraceId AS id FROM %s_trace_id_ts_mv %s ORDER BY Start DESC %s"
+	BASESQL = `SELECT a.Timestamp,
        a.TraceId,
        a.SpanId,
        a.ParentSpanId,
@@ -93,73 +94,59 @@ func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, 
        a.Links.TraceId,
        a.Links.SpanId,
        a.Links.TraceState,
-       a.Links.Attributes,
-       b.Start,
-       b.End FROM otel_traces AS a JOIN otel_traces_trace_id_ts AS b ON a.TraceId = b.TraceId`
+       a.Links.Attributes FROM
+       (%s) AS b JOIN
+       %s AS a on b.id = a.TraceId %s`
+	DATETIMELAYOUT = "2006-01-02 15:04:05"
+)
 
-	fmt.Println(base)
-
-	limit := `SELECT a.TraceId FROM otel_traces AS a JOIN otel_traces_trace_id_ts AS b ON a.TraceId = b.TraceId`
-
-	var whereList []string
+func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, error) {
 	if query.ServiceName == "" {
 		return "", errors.New("query parameter must contain  ServiceName")
 	}
-	whereList = append(whereList, fmt.Sprintf("a.ServiceName='%s'", query.ServiceName))
+	var WherekeywordList []string
+	WherekeywordList = append(WherekeywordList, fmt.Sprintf("a.ServiceName='%s'", query.ServiceName))
 	if query.OperationName != "" {
-		whereList = append(whereList, fmt.Sprintf("a.SpanName='%s'", query.ServiceName))
+		WherekeywordList = append(WherekeywordList, fmt.Sprintf("a.SpanName='%s'", query.OperationName))
 	}
-	if len(query.Tags) != 0 {
+	if query.Tags != nil {
 		for key, value := range query.Tags {
-			whereList = append(whereList, fmt.Sprintf("a.SpanAttributes['%s']='%s'", key, value))
+			WherekeywordList = append(WherekeywordList, fmt.Sprintf("a.SpanAttributes['%s']='%s'", key, value))
 		}
 	}
-	//StartTime <= b.Start <= EndTime
+	whereKeywordCondition := fmt.Sprintf("WHERE %s", strings.Join(WherekeywordList, " AND "))
+
+	// build time and LIMIT condition
+	var whereTimeList []string
+	//default past 1 hours
+	end := time.Now()
+	start := end.Add(-time.Hour)
+	timePattern := "Start BETWEEN '%s' AND '%s'"
+	timeCondition := fmt.Sprintf(timePattern, start.Format(DATETIMELAYOUT), end.Format(DATETIMELAYOUT))
 	if query.EndTime.After(query.StartTime) {
-		whereList = append(whereList, fmt.Sprintf("'%s'<=b.Start", query.StartTime.Format("2019-01-01 00:00:00")))
-		whereList = append(whereList, fmt.Sprintf("b.Start<='%s'", query.StartTime.Format("2019-01-01 00:00:00")))
+		timeCondition = fmt.Sprintf(timePattern,
+			query.StartTime.Format(DATETIMELAYOUT),
+			query.EndTime.Format(DATETIMELAYOUT))
 	}
+	whereTimeList = append(whereTimeList, timeCondition)
 	//DurationMin <= a.Duration <= DurationMax
-	if query.DurationMin.Nanos < query.DurationMax.Nanos {
-		whereList = append(whereList, fmt.Sprintf("%d<=a.Duration", query.DurationMin.Nanos))
-		whereList = append(whereList, fmt.Sprintf("a.Duration=<%d", query.DurationMax.Nanos))
+	if query.DurationMin != nil && query.DurationMax != nil && query.DurationMin.Nanos < query.DurationMax.Nanos {
+		whereTimeList = append(whereTimeList, fmt.Sprintf("(End - Start) BETWEEN %d AND %d", query.DurationMin.Nanos,
+			query.DurationMax.Nanos))
 	}
-	whereCondition := fmt.Sprintf("WHERE %s", strings.Join(whereList, "AND"))
-
-	//add where
-	if len(whereList) != 0 {
-		limit = limit + " " + whereCondition
+	limitPattern := "LIMIT %d"
+	limitCondition := fmt.Sprintf(limitPattern, 100)
+	if query.NumTraces > 0 && query.NumTraces < 100 {
+		limitCondition = fmt.Sprintf(limitPattern, query.NumTraces)
 	}
+	whereTimeCondition := fmt.Sprintf("WHERE %s", strings.Join(whereTimeList, " AND "))
+	subQuery := fmt.Sprintf(SUBSQL, tableName, whereTimeCondition, limitCondition)
 
-	//todo
-	// limit := fmt.Sprintf("LIMIT %d", query.NumTraces)
-	// SELECT TraceId FROM otel_traces_trace_id_ts GROUP BY TraceId
-
-	return `SELECT a.Timestamp,
-       a.TraceId,
-       a.SpanId,
-       a.ParentSpanId,
-       a.SpanName,
-       a.SpanKind,
-       a.ServiceName,
-       a.Duration,
-       a.StatusCode,
-       a.StatusMessage,
-       a.SpanAttributes,
-       a.ResourceAttributes,
-       a.Events.Timestamp,
-       a.Events.Name,
-       a.Events.Attributes,
-       a.Links.TraceId,
-       a.Links.SpanId,
-       a.Links.TraceState,
-       a.Links.Attributes,
-       b.Start,
-       b.End FROM otel_traces AS a JOIN otel_traces_trace_id_ts AS b ON a.TraceId = b.TraceId`, nil
+	return fmt.Sprintf(BASESQL, subQuery, tableName, whereKeywordCondition), nil
 }
 
 func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
-	var spanSlice []*v1_trace.Span
+	rsMap := make(map[string]*v1_trace.ResourceSpans)
 	for _, item := range tracesModel {
 		s := v1_trace.Span{}
 		s.TraceId = []byte(item.TraceId)
@@ -182,25 +169,33 @@ func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
 			Message: item.StatusMessage,
 			Code:    v1_trace.Status_StatusCode(v1_trace.Span_SpanKind_value[item.StatusCode]),
 		}
-		spanSlice = append(spanSlice, &s)
+		attrId := generateAttributesId(item.ResourceAttributes)
+		if _, ok := rsMap[attrId]; ok {
+			rsMap[attrId].ScopeSpans[0].Spans = append(rsMap[attrId].ScopeSpans[0].Spans, &s)
+		} else {
+			spanSlice := []*v1_trace.Span{&s}
+			rsMap[attrId] = &v1_trace.ResourceSpans{
+				Resource:   &v1_resource.Resource{Attributes: convertAttributes(item.ResourceAttributes)},
+				ScopeSpans: []*v1_trace.ScopeSpans{{Spans: spanSlice}},
+			}
+		}
 	}
+	var rsList []*v1_trace.ResourceSpans
+	for _, value := range rsMap {
+		rsList = append(rsList, value)
+	}
+	return &v1_trace.TracesData{
+		ResourceSpans: rsList,
+	}
+}
 
-	result := &v1_trace.TracesData{
-		ResourceSpans: []*v1_trace.ResourceSpans{
-			{
-				Resource: nil,
-				ScopeSpans: []*v1_trace.ScopeSpans{
-					{
-						Scope:     nil,
-						Spans:     spanSlice,
-						SchemaUrl: "",
-					},
-				},
-				SchemaUrl: "",
-			},
-		},
+func generateAttributesId(attr map[string]string) string {
+	var attrList []string
+	for key, value := range attr {
+		attrList = append(attrList, fmt.Sprintf("%s:%s", key, value))
 	}
-	return result
+	sort.Slice(attrList, func(i, j int) bool { return attrList[i] <= attrList[j] })
+	return strings.Join(attrList, ";")
 }
 
 func convertAttributes(attr map[string]string) []*v1_common.KeyValue {
