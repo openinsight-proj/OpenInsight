@@ -26,10 +26,10 @@ func TestSearchTraces(t *testing.T) {
 	err := factory.Initialize(&zap.Logger{})
 	require.NoError(t, err)
 
-	//err = createTracesTable(factory.client)
-	//require.NoError(t, err)
-	//
-	//insertTracesDate(factory.client)
+	err = truncateTracesTable(factory.client)
+	require.NoError(t, err)
+
+	insertTracesDate(factory.client)
 
 	//defer func() {
 	//	deleteTracesTables(factory.client)
@@ -119,9 +119,12 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         )`
 )
 
-func createTracesTable(conn clickhouse.Conn) error {
+func truncateTracesTable(conn clickhouse.Conn) error {
 	ctx := context.Background()
 	if err := conn.Exec(ctx, `truncate table IF EXISTS otel.otel_traces`); err != nil {
+		return err
+	}
+	if err := conn.Exec(ctx, `truncate table IF EXISTS otel.otel_traces_trace_id_ts`); err != nil {
 		return err
 	}
 	//err := conn.Exec(ctx, fmt.Sprintf(createTracesTableSQL, "otel.otel_traces", "3"))
@@ -197,14 +200,14 @@ func simpleTraces(count int) ptrace.Traces {
 	ss := rs.ScopeSpans().AppendEmpty()
 	for i := 0; i < count; i++ {
 		s := ss.Spans().AppendEmpty()
-		s.SetTraceID(uInt64ToTraceID(0, 1))
-		s.SetSpanID(uInt64ToSpanID(1))
+		s.SetTraceID(uInt64ToTraceID(0, uint64(i)))
+		s.SetSpanID(uInt64ToSpanID(uint64(i)))
 		s.TraceState().FromRaw("TraceState")
-		s.SetParentSpanID(uInt64ToSpanID(1))
+		s.SetParentSpanID(uInt64ToSpanID(uint64(i)))
 		s.SetName("span_name xxx")
 		s.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		s.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		s.Attributes().PutStr("service.name", "this service name")
+		s.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Minute * 5)))
+		s.Attributes().PutStr("service.name", fmt.Sprintf("this service [%d]", i))
 		s.Attributes().PutStr("a1", "v1")
 		s.Attributes().PutStr("a2", "v2")
 		s.Status().SetCode(ptrace.StatusCodeOk)
@@ -227,16 +230,17 @@ func simpleTraces(count int) ptrace.Traces {
 		event1.Attributes().PutStr("event2_attrubute_2", "value2")
 
 		link := s.Links().AppendEmpty()
-		link.SetTraceID(uInt64ToTraceID(0, 1))
-		link.SetSpanID(uInt64ToSpanID(1))
+		link.SetTraceID(uInt64ToTraceID(0, uint64(i)))
+		link.SetSpanID(uInt64ToSpanID(uint64(i)))
 		link.TraceState().FromRaw("TraceState")
 		link.Attributes().PutStr("k", "v")
 
 		link2 := s.Links().AppendEmpty()
-		link2.SetTraceID(uInt64ToTraceID(0, 1))
-		link2.SetSpanID(uInt64ToSpanID(1))
+		link2.SetTraceID(uInt64ToTraceID(0, uint64(i)))
+		link2.SetSpanID(uInt64ToSpanID(uint64(i)))
 		link2.TraceState().FromRaw("TraceState2")
 		link2.Attributes().PutStr("k2", "v2")
+		time.Sleep(time.Second)
 	}
 	return traces
 }

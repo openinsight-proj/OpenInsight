@@ -2,7 +2,10 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
@@ -50,7 +53,10 @@ func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_tra
 }
 
 func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
-	sql := buildQuery(query, q.tracingTableName)
+	sql, err := buildQuery(query, q.tracingTableName)
+	if err != nil {
+		return nil, err
+	}
 	var result []TracesModel
 	if err := q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
@@ -65,11 +71,11 @@ func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 	return nil, nil
 }
 
-func buildQuery(query *storage.TraceQueryParameters, tableName string) string {
+func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, error) {
+
 	//todo build SQL
-	// otel.otel_traces ->  database.tableName
-	// otel.otel_traces_trace_id_ts -> database.tableName_trace_id_ts
-	return `SELECT a.Timestamp,
+	// otel_traces_trace_id_ts -> tableName_trace_id_ts
+	base := `SELECT a.Timestamp,
        a.TraceId,
        a.SpanId,
        a.ParentSpanId,
@@ -90,6 +96,66 @@ func buildQuery(query *storage.TraceQueryParameters, tableName string) string {
        a.Links.Attributes,
        b.Start,
        b.End FROM otel_traces AS a JOIN otel_traces_trace_id_ts AS b ON a.TraceId = b.TraceId`
+
+	fmt.Println(base)
+
+	limit := `SELECT a.TraceId FROM otel_traces AS a JOIN otel_traces_trace_id_ts AS b ON a.TraceId = b.TraceId`
+
+	var whereList []string
+	if query.ServiceName == "" {
+		return "", errors.New("query parameter must contain  ServiceName")
+	}
+	whereList = append(whereList, fmt.Sprintf("a.ServiceName='%s'", query.ServiceName))
+	if query.OperationName != "" {
+		whereList = append(whereList, fmt.Sprintf("a.SpanName='%s'", query.ServiceName))
+	}
+	if len(query.Tags) != 0 {
+		for key, value := range query.Tags {
+			whereList = append(whereList, fmt.Sprintf("a.SpanAttributes['%s']='%s'", key, value))
+		}
+	}
+	//StartTime <= b.Start <= EndTime
+	if query.EndTime.After(query.StartTime) {
+		whereList = append(whereList, fmt.Sprintf("'%s'<=b.Start", query.StartTime.Format("2019-01-01 00:00:00")))
+		whereList = append(whereList, fmt.Sprintf("b.Start<='%s'", query.StartTime.Format("2019-01-01 00:00:00")))
+	}
+	//DurationMin <= a.Duration <= DurationMax
+	if query.DurationMin.Nanos < query.DurationMax.Nanos {
+		whereList = append(whereList, fmt.Sprintf("%d<=a.Duration", query.DurationMin.Nanos))
+		whereList = append(whereList, fmt.Sprintf("a.Duration=<%d", query.DurationMax.Nanos))
+	}
+	whereCondition := fmt.Sprintf("WHERE %s", strings.Join(whereList, "AND"))
+
+	//add where
+	if len(whereList) != 0 {
+		limit = limit + " " + whereCondition
+	}
+
+	//todo
+	// limit := fmt.Sprintf("LIMIT %d", query.NumTraces)
+	// SELECT TraceId FROM otel_traces_trace_id_ts GROUP BY TraceId
+
+	return `SELECT a.Timestamp,
+       a.TraceId,
+       a.SpanId,
+       a.ParentSpanId,
+       a.SpanName,
+       a.SpanKind,
+       a.ServiceName,
+       a.Duration,
+       a.StatusCode,
+       a.StatusMessage,
+       a.SpanAttributes,
+       a.ResourceAttributes,
+       a.Events.Timestamp,
+       a.Events.Name,
+       a.Events.Attributes,
+       a.Links.TraceId,
+       a.Links.SpanId,
+       a.Links.TraceState,
+       a.Links.Attributes,
+       b.Start,
+       b.End FROM otel_traces AS a JOIN otel_traces_trace_id_ts AS b ON a.TraceId = b.TraceId`, nil
 }
 
 func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
@@ -103,8 +169,9 @@ func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
 		s.Name = item.SpanName
 		s.Kind = v1_trace.Span_SpanKind(v1_trace.Span_SpanKind_value[item.SpanKind])
 		// item.ServiceName in attribute
-		s.StartTimeUnixNano = uint64(item.Start.UnixNano())
-		s.EndTimeUnixNano = uint64(item.End.UnixNano())
+		s.StartTimeUnixNano = uint64(item.Timestamp.UnixNano())
+		duration, _ := time.ParseDuration(fmt.Sprintf("%dns", item.Duration))
+		s.EndTimeUnixNano = uint64(item.Timestamp.Add(duration).UnixNano())
 		s.Attributes = convertAttributes(item.SpanAttributes)
 		//s.DroppedAttributesCount
 		s.Events = convertEvents(item.EventsName, item.EventsTimestamp, item.EventsAttributes)
