@@ -28,7 +28,7 @@ func mockSearchHits() *client.SearchHits {
 	return searchHits
 }
 func Test_DocumentsConvert(t *testing.T) {
-	tracesData, err := DocumentsConvert(mockSearchHits())
+	tracesData, err := DocumentsResourceSpansConvert(mockSearchHits())
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(tracesData.ResourceSpans))
 }

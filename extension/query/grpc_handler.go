@@ -46,8 +46,11 @@ func (t *Handler) GetTrace(ctx context.Context, request *v1alpha1.GetTraceReques
 }
 
 func (t *Handler) GetServices(ctx context.Context, _ *v1alpha1.GetServicesRequest) (*v1alpha1.GetServicesResponse, error) {
-
-	return &v1alpha1.GetServicesResponse{}, nil
+	kvs, err := t.QueryService.tracingQuerySvc.GetService(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &v1alpha1.GetServicesResponse{Services: kvs}, nil
 }
 
 func parseTraceQueryParameters(q *v1alpha1.TraceQueryParameters) (*storage.TraceQueryParameters, error) {
