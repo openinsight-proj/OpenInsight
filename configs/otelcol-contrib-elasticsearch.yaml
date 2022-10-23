@@ -12,10 +12,10 @@ extensions:
         endpoint: 0.0.0.0:18889
     storage:
       elasticsearch:
-        endpoints: [ "https://10.6.229.192:31450" ]
-        traces_index: otlp_spans
+        endpoints: [ "https://172.16.188.1:30997" ]
+        traces_index: otlp-spans
         user: elastic
-        password: XAlJ948ZY0leE320SQ6hfv17
+        password: 64QZx5epX63Yy10Fqr57OFp2
       clickhouse:
         dsn: tcp://127.0.0.1:9000?database=default
         ttl_days: 3
@@ -67,11 +67,11 @@ exporters:
     tls:
       insecure: false
       insecure_skip_verify: true
-    endpoints: [https://10.6.229.192:31450]
+    endpoints: [https://172.16.188.1:30997]
     timeout: 2m
-    traces_index: otlp_spans
+    traces_index: otlp-spans
     user: elastic
-    password: XAlJ948ZY0leE320SQ6hfv17
+    password: 64QZx5epX63Yy10Fqr57OFp2
     retry:
       max_requests: 5
 
