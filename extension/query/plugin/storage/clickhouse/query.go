@@ -48,6 +48,11 @@ type TracesModel struct {
 	End                time.Time           `ch:"End"`
 }
 
+func (q *ClickHouseQuery) GetService(ctx context.Context) ([]string, error) {
+
+	return nil, nil
+}
+
 func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
 	return &v1_trace.TracesData{}, nil
 }

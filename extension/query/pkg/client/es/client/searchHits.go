@@ -11,14 +11,18 @@ type SearchResult struct {
 	TookInMillis    int64                `json:"took,omitempty"`             // search time in milliseconds
 	TerminatedEarly bool                 `json:"terminated_early,omitempty"` // request terminated early
 	NumReducePhases int                  `json:"num_reduce_phases,omitempty"`
-	Clusters        *SearchResultCluster `json:"_clusters,omitempty"`  // 6.1.0+
-	ScrollId        string               `json:"_scroll_id,omitempty"` // only used with Scroll and Scan operations
-	Hits            *SearchHits          `json:"hits,omitempty"`       // the actual search hits
-	Suggest         SearchSuggest        `json:"suggest,omitempty"`    // results from suggesters
-	TimedOut        bool                 `json:"timed_out,omitempty"`  // true if the search timed out
-	Error           *ErrorDetails        `json:"error,omitempty"`      // only used in MultiGet
-	Status          int                  `json:"status,omitempty"`     // used in MultiSearch
+	Clusters        *SearchResultCluster `json:"_clusters,omitempty"`    // 6.1.0+
+	ScrollId        string               `json:"_scroll_id,omitempty"`   // only used with Scroll and Scan operations
+	Hits            *SearchHits          `json:"hits,omitempty"`         // the actual search hits
+	Aggregations    Aggregations         `json:"aggregations,omitempty"` // results from aggregations
+	Suggest         SearchSuggest        `json:"suggest,omitempty"`      // results from suggesters
+	TimedOut        bool                 `json:"timed_out,omitempty"`    // true if the search timed out
+	Error           *ErrorDetails        `json:"error,omitempty"`        // only used in MultiGet
+	Status          int                  `json:"status,omitempty"`       // used in MultiSearch
 }
+
+// Aggregations is a list of aggregations that are part of a search result.
+type Aggregations map[string]*json.RawMessage
 
 // SearchSuggest is a map of suggestions.
 // See https://www.elastic.co/guide/en/elasticsearch/reference/6.8/search-suggesters.html.

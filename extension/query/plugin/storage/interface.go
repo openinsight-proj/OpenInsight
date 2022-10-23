@@ -13,6 +13,7 @@ type Query interface {
 	SearchTraces(ctx context.Context, query *TraceQueryParameters) (*v1_trace.TracesData, error)
 	SearchLogs(ctx context.Context) (*v1_logs.LogsData, error)
 	GetLog(ctx context.Context) (*v1_logs.LogsData, error)
+	GetService(ctx context.Context) ([]string, error)
 
 	//TODO: add metrics query.
 }
