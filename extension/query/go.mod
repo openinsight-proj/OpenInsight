@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
-	google.golang.org/grpc v1.50.1
+	google.golang.org/grpc v1.50.0
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -51,6 +51,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.62.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
