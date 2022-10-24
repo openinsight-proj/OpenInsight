@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0
-	github.com/agiledragon/gomonkey/v2 v2.9.0
 	github.com/aquasecurity/esquery v0.2.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/golang/protobuf v1.5.2
@@ -51,8 +50,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/stretchr/objx v0.4.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.62.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
