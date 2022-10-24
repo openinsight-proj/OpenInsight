@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"sort"
 	"strings"
 	"time"
@@ -16,6 +15,36 @@ import (
 	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 	"go.uber.org/zap"
+)
+
+const (
+	SUB_SQL = "SELECT TraceId AS id FROM %s_trace_id_ts %s ORDER BY Start DESC %s"
+	COLUMNS = `a.Timestamp,
+       a.TraceId,
+       a.SpanId,
+       a.ParentSpanId,
+       a.SpanName,
+       a.SpanKind,
+       a.ServiceName,
+       a.Duration,
+       a.StatusCode,
+       a.StatusMessage,
+       a.SpanAttributes,
+       a.ResourceAttributes,
+       a.Events.Timestamp,
+       a.Events.Name,
+       a.Events.Attributes,
+       a.Links.TraceId,
+       a.Links.SpanId,
+       a.Links.TraceState,
+       a.Links.Attributes`
+	BASE_SQL = `SELECT %s FROM
+       (%s) AS b JOIN
+       %s AS a on b.id = a.TraceId %s`
+	DATETIME_LAYOUT          = "2006-01-02 15:04:05"
+	QUERY_SERVICE_SQL        = "select ServiceName from (SELECT ServiceName,Timestamp FROM %s where Timestamp between date_sub(%s,%d,now()) and now()) group by ServiceName"
+	QUERY_SERVICE_TIME_UNIT  = "DAY"
+	QUERY_SERVICE_TIME_VALUE = 1
 )
 
 type ClickHouseQuery struct {
@@ -52,12 +81,42 @@ type TracesModel struct {
 }
 
 func (q *ClickHouseQuery) GetService(ctx context.Context) ([]string, error) {
+	sql := fmt.Sprintf(QUERY_SERVICE_SQL, q.tracingTableName, QUERY_SERVICE_TIME_UNIT, QUERY_SERVICE_TIME_VALUE)
+	var serviceList []string
+	rows, err := q.client.Query(ctx, sql)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	var result struct {
+		ServiceName string `ch:"ServiceName"`
+	}
+	for {
+		if !rows.Next() {
+			break
+		}
+		err = rows.ScanStruct(&result)
+		if err != nil {
+			return nil, err
+		}
+		serviceList = append(serviceList, result.ServiceName)
+	}
+
+	return serviceList, nil
 }
 
 func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
-	return &v1_trace.TracesData{}, nil
+	if traceID == "" {
+		return nil, errors.New("traceID must not empty")
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %s AS a WHERE a.TraceId='%s'", COLUMNS, q.tracingTableName, traceID)
+	var result []TracesModel
+	if err := q.client.Select(ctx, &result, sql); err != nil {
+		return nil, err
+	}
+
+	return convertSpan(result), nil
 }
 
 func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
@@ -65,10 +124,12 @@ func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.Trace
 	if err != nil {
 		return nil, err
 	}
+
 	var result []TracesModel
 	if err = q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
 	}
+
 	return convertSpan(result), nil
 }
 
@@ -79,36 +140,11 @@ func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 	return nil, nil
 }
 
-const (
-	SUBSQL  = "SELECT TraceId AS id FROM %s_trace_id_ts_mv %s ORDER BY Start DESC %s"
-	BASESQL = `SELECT a.Timestamp,
-       a.TraceId,
-       a.SpanId,
-       a.ParentSpanId,
-       a.SpanName,
-       a.SpanKind,
-       a.ServiceName,
-       a.Duration,
-       a.StatusCode,
-       a.StatusMessage,
-       a.SpanAttributes,
-       a.ResourceAttributes,
-       a.Events.Timestamp,
-       a.Events.Name,
-       a.Events.Attributes,
-       a.Links.TraceId,
-       a.Links.SpanId,
-       a.Links.TraceState,
-       a.Links.Attributes FROM
-       (%s) AS b JOIN
-       %s AS a on b.id = a.TraceId %s`
-	DATETIMELAYOUT = "2006-01-02 15:04:05"
-)
-
 func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, error) {
 	if query.ServiceName == "" {
 		return "", errors.New("query parameter must contain  ServiceName")
 	}
+
 	var WherekeywordList []string
 	WherekeywordList = append(WherekeywordList, fmt.Sprintf("a.ServiceName='%s'", query.ServiceName))
 	if query.OperationName != "" {
@@ -123,17 +159,19 @@ func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, 
 
 	// build time and LIMIT condition
 	var whereTimeList []string
+
 	//default past 1 hours
 	end := time.Now()
 	start := end.Add(-time.Hour)
 	timePattern := "Start BETWEEN '%s' AND '%s'"
-	timeCondition := fmt.Sprintf(timePattern, start.Format(DATETIMELAYOUT), end.Format(DATETIMELAYOUT))
+	timeCondition := fmt.Sprintf(timePattern, start.Format(DATETIME_LAYOUT), end.Format(DATETIME_LAYOUT))
 	if query.EndTime.After(query.StartTime) {
 		timeCondition = fmt.Sprintf(timePattern,
-			query.StartTime.Format(DATETIMELAYOUT),
-			query.EndTime.Format(DATETIMELAYOUT))
+			query.StartTime.Format(DATETIME_LAYOUT),
+			query.EndTime.Format(DATETIME_LAYOUT))
 	}
 	whereTimeList = append(whereTimeList, timeCondition)
+
 	//DurationMin <= a.Duration <= DurationMax
 	if query.DurationMin != nil && query.DurationMax != nil && query.DurationMin.Nanos < query.DurationMax.Nanos {
 		whereTimeList = append(whereTimeList, fmt.Sprintf("(End - Start) BETWEEN %d AND %d", query.DurationMin.Nanos,
@@ -145,9 +183,9 @@ func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, 
 		limitCondition = fmt.Sprintf(limitPattern, query.NumTraces)
 	}
 	whereTimeCondition := fmt.Sprintf("WHERE %s", strings.Join(whereTimeList, " AND "))
-	subQuery := fmt.Sprintf(SUBSQL, tableName, whereTimeCondition, limitCondition)
 
-	return fmt.Sprintf(BASESQL, subQuery, tableName, whereKeywordCondition), nil
+	subQuery := fmt.Sprintf(SUB_SQL, tableName, whereTimeCondition, limitCondition)
+	return fmt.Sprintf(BASE_SQL, COLUMNS, subQuery, tableName, whereKeywordCondition), nil
 }
 
 func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
@@ -174,6 +212,7 @@ func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
 			Message: item.StatusMessage,
 			Code:    v1_trace.Status_StatusCode(v1_trace.Span_SpanKind_value[item.StatusCode]),
 		}
+
 		attrId := generateAttributesId(item.ResourceAttributes)
 		if _, ok := rsMap[attrId]; ok {
 			rsMap[attrId].ScopeSpans[0].Spans = append(rsMap[attrId].ScopeSpans[0].Spans, &s)
@@ -185,10 +224,12 @@ func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
 			}
 		}
 	}
+
 	var rsList []*v1_trace.ResourceSpans
 	for _, value := range rsMap {
 		rsList = append(rsList, value)
 	}
+
 	return &v1_trace.TracesData{
 		ResourceSpans: rsList,
 	}

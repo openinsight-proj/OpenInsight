@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/service/servicetest"
 	"path/filepath"
 	"testing"
@@ -38,9 +39,10 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	defaultCfg.(*Config).Storage.ClickhouseType = &clickhouse.ClickhouseType{
-		Dsn:              "tcp://127.0.0.1:9000?database=default",
-		Ttl:              3,
-		Timeout:          "5s",
+		Dsn: "tcp://127.0.0.1:9000/default",
+		TlsClientSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
 		LoggingTableName: "otel_logs",
 		TracingTableName: "otel_traces",
 		MetricsTableName: "otel_metrics",

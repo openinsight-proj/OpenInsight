@@ -1,12 +1,45 @@
 # Clickhouse storage
 
+## Configuration options
+
+```yaml
+clickhouse:
+  dsn: tcp://127.0.0.1:9000/default
+  tls_setting:
+    insecure: false
+    cert_file: "path"
+    key_file: "path"
+```
+- `dsn`(no default): The ClickHouse server DSN (Data Source Name), for
+  example `tcp://127.0.0.1:9000/default`
+  For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
+  For http protocol
+  reference: [ClickHouse/clickhouse-go#http-support-experimental](https://github.com/ClickHouse/clickhouse-go/tree/main#http-support-experimental)
+  .
+- tls_setting
+  - `insecure` (default = `false`): whether to enable client transport security for
+    the exporter's connection.
+  
+    As a result, the following parameters are also required under `tls_setting`:
+
+  - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
+  only be used if `insecure` is set to false.
+  - `key_file` (no default): path to the TLS key to use for TLS required connections. Should
+  only be used if `insecure` is set to false.
+ 
+  The following settings are optional:
+
+  - `server_name_override` (default = `<missing service name>`): requested by client for virtual hosting.
+
+  more tls Configuration [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+
+
 ## SQL design
 ```sql
---1. 先进行 Duration, Start 查询所有符合traceid,并安时间排序，最后使用limit:  
---(SUBSQL)
+--1. filger Duration, Start with limit:  
 SELECT TraceId AS id FROM otel.otel_traces_trace_id_ts_mv WHERE Start BETWEEN '2022-10-23 23:56:18' AND '2022-10-23 23:56:21' AND (End - Start) BETWEEN 20000000 AND 100000000 ORDER BY Start DESC LIMIT 20
                                                                                                                                                                                
---2.连接 SUBSQL 和 otel_traces并添加其他查询条件并查询数据
+--2.join SUBSQL and otel_traces
 SELECT a.Timestamp,
        a.TraceId,
        a.SpanId,

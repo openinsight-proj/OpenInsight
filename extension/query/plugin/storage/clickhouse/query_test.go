@@ -14,7 +14,33 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/durationpb"
+)
+
+const (
+	// language=ClickHouse SQL
+	insertTracesSQLTemplate = `INSERT INTO %s (
+                        Timestamp,
+                        TraceId,
+                        SpanId,
+                        ParentSpanId,
+                        TraceState,
+                        SpanName,
+                        SpanKind,
+                        ServiceName,
+                        ResourceAttributes,
+                        SpanAttributes,
+                        Duration,
+                        StatusCode,
+                        StatusMessage,
+                        Events.Timestamp,
+                        Events.Name,
+                        Events.Attributes,
+                        Links.TraceId,
+                        Links.SpanId,
+                        Links.TraceState,
+                        Links.Attributes
+                        )`
 )
 
 func TestBuildQuery(t *testing.T) {
@@ -98,20 +124,8 @@ func TestBuildQuery(t *testing.T) {
 }
 
 func TestSearchTraces(t *testing.T) {
-	factory := NewFactory(&ct)
-	require.NotNil(t, factory)
 
-	err := factory.Initialize(&zap.Logger{})
-	require.NoError(t, err)
-
-	err = truncateTracesTable(factory.client)
-	require.NoError(t, err)
-
-	err = insertTracesDate(factory.client)
-	require.NoError(t, err)
-
-	query, err := factory.CreateSpanQuery()
-	require.NotNil(t, query)
+	query, err := initQuery()
 	require.NoError(t, err)
 
 	req := storage.TraceQueryParameters{
@@ -127,70 +141,45 @@ func TestSearchTraces(t *testing.T) {
 
 }
 
-const (
-	// language=ClickHouse SQL
-	createTracesTableSQL = `
-CREATE TABLE IF NOT EXISTS %s (
-     Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
-     TraceId String CODEC(ZSTD(1)),
-     SpanId String CODEC(ZSTD(1)),
-     ParentSpanId String CODEC(ZSTD(1)),
-     TraceState String CODEC(ZSTD(1)),
-     SpanName LowCardinality(String) CODEC(ZSTD(1)),
-     SpanKind LowCardinality(String) CODEC(ZSTD(1)),
-     ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-     SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-     Duration Int64 CODEC(ZSTD(1)),
-     StatusCode LowCardinality(String) CODEC(ZSTD(1)),
-     StatusMessage String CODEC(ZSTD(1)),
-     Events Nested (
-         Timestamp DateTime64(9),
-         Name LowCardinality(String),
-         Attributes Map(LowCardinality(String), String)
-     ) CODEC(ZSTD(1)),
-     Links Nested (
-         TraceId String,
-         SpanId String,
-         TraceState String,
-         Attributes Map(LowCardinality(String), String)
-     ) CODEC(ZSTD(1)),
-     INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
-     INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-     INDEX idx_duration Duration TYPE minmax GRANULARITY 1
-) ENGINE MergeTree()
-%s
-PARTITION BY toDate(Timestamp)
-ORDER BY (ServiceName, SpanName, toUnixTimestamp(Timestamp), TraceId)
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
-`
-	// language=ClickHouse SQL
-	insertTracesSQLTemplate = `INSERT INTO %s (
-                        Timestamp,
-                        TraceId,
-                        SpanId,
-                        ParentSpanId,
-                        TraceState,
-                        SpanName,
-                        SpanKind,
-                        ServiceName,
-                        ResourceAttributes,
-                        SpanAttributes,
-                        Duration,
-                        StatusCode,
-                        StatusMessage,
-                        Events.Timestamp,
-                        Events.Name,
-                        Events.Attributes,
-                        Links.TraceId,
-                        Links.SpanId,
-                        Links.TraceState,
-                        Links.Attributes
-                        )`
-)
+func TestGetService(t *testing.T) {
+	query, err := initQuery()
+	require.NoError(t, err)
+
+	resp, err := query.GetService(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func TestGetTrace(t *testing.T) {
+	query, err := initQuery()
+	require.NoError(t, err)
+
+	resp, err := query.GetTrace(context.Background(), "00000000000000000000000000000001")
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+}
+
+func initQuery() (storage.Query, error) {
+	factory := NewFactory(&ct)
+
+	err := factory.Initialize(&zap.Logger{})
+	if err != nil {
+		return nil, err
+	}
+
+	//err = truncateTracesTable(factory.client)
+	//require.NoError(t, err)
+	//
+	//err = insertTracesDate(factory.client)
+	//require.NoError(t, err)
+
+	query, err := factory.CreateSpanQuery()
+	if err != nil {
+		return nil, err
+	}
+	return query, err
+}
 
 func truncateTracesTable(conn clickhouse.Conn) error {
 	ctx := context.Background()
@@ -200,10 +189,6 @@ func truncateTracesTable(conn clickhouse.Conn) error {
 	if err := conn.Exec(ctx, `truncate table IF EXISTS otel.otel_traces_trace_id_ts`); err != nil {
 		return err
 	}
-	//err := conn.Exec(ctx, fmt.Sprintf(createTracesTableSQL, "otel.otel_traces", "3"))
-	//if err != nil {
-	//	return err
-	//}
 	return nil
 }
 
@@ -390,5 +375,5 @@ func uInt64ToTraceID(high, low uint64) pcommon.TraceID {
 func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pcommon.SpanID(spanID)
+	return spanID
 }

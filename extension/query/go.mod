@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0
+	github.com/agiledragon/gomonkey/v2 v2.9.0
 	github.com/aquasecurity/esquery v0.2.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/golang/protobuf v1.5.2
@@ -14,7 +15,6 @@ require (
 	go.opentelemetry.io/collector v0.62.0
 	go.opentelemetry.io/collector/pdata v0.62.0
 	go.opentelemetry.io/collector/semconv v0.62.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.1
 	go.opentelemetry.io/proto/otlp v0.19.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc

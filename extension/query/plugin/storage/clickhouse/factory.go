@@ -2,10 +2,8 @@ package clickhouse
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"go.opentelemetry.io/collector/config/configtls"
 	"io"
-	"net/url"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -22,12 +20,11 @@ const (
 )
 
 type ClickhouseType struct {
-	Dsn              string `mapstructure:"dsn"`
-	Ttl              int64  `mapstructure:"ttl_days"`
-	Timeout          string `mapstructure:"timeout"`
-	LoggingTableName string `mapstructure:"logging_table_name"`
-	TracingTableName string `mapstructure:"tracing_table_name"`
-	MetricsTableName string `mapstructure:"metrics_table_name"`
+	Dsn              string                     `mapstructure:"dsn"`
+	TlsClientSetting configtls.TLSClientSetting `mapstructure:"tls_setting"`
+	LoggingTableName string                     `mapstructure:"logging_table_name"`
+	TracingTableName string                     `mapstructure:"tracing_table_name"`
+	MetricsTableName string                     `mapstructure:"metrics_table_name"`
 }
 
 // Factory implements storage.Factory for Elasticsearch as storage.
@@ -39,32 +36,19 @@ type Factory struct {
 }
 
 func (f *Factory) Initialize(logger *zap.Logger) error {
-	//init client and logger
-	dsnURL, _ := url.Parse(f.cfg.Dsn)
-	options := &clickhouse.Options{
-		Addr: []string{dsnURL.Host},
-	}
-	if dsnURL.Query().Get("database") == "" {
-		return errors.New("dsn string must contain a database")
-	}
-	auth := clickhouse.Auth{
-		Database: dsnURL.Query().Get("database"),
+	options, err := clickhouse.ParseDSN(f.cfg.Dsn)
+	if err != nil {
+		return err
 	}
 
-	if dsnURL.Query().Get("username") != "" {
-		auth.Username = dsnURL.Query().Get("username")
-		auth.Password = dsnURL.Query().Get("password")
+	if f.cfg.TlsClientSetting.ServerName == "" {
+		f.cfg.TlsClientSetting.ServerName = "<missing service name>"
 	}
-	options.Auth = auth
-
-	options.DialTimeout = TIMEOUT
-	if f.cfg.Timeout != "" {
-		timeout, err := time.ParseDuration(f.cfg.Timeout)
-		if err == nil {
-			options.DialTimeout = timeout
-		}
-		logger.Error(fmt.Sprintf("parse timeout string: %s error, use default timeout: %s", f.cfg.Timeout, TIMEOUT))
+	tls, err := f.cfg.TlsClientSetting.LoadTLSConfig()
+	if err != nil {
+		return err
 	}
+	options.TLS = tls
 
 	conn, err := clickhouse.Open(options)
 	if err != nil {
@@ -73,8 +57,7 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 	if err = conn.Ping(context.Background()); err != nil {
 		return err
 	}
-	v, _ := conn.ServerVersion()
-	fmt.Println(v)
+
 	f.client = conn
 	f.logger = logger
 	return nil

@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc"
@@ -175,6 +174,6 @@ func (m *MockQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
-func (m *MockQuery) GetService(ctx context.Context) ([]*v1_common.KeyValue, error) {
+func (m *MockQuery) GetService(ctx context.Context) ([]string, error) {
 	return nil, nil
 }

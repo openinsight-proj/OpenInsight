@@ -4,13 +4,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
 var ct = ClickhouseType{
-	Dsn:              "tcp://127.0.0.1:9000?database=otel",
-	Ttl:              0,
-	Timeout:          "",
+	Dsn: "tcp://127.0.0.1:9000/otel",
+	TlsClientSetting: configtls.TLSClientSetting{
+		TLSSetting:         configtls.TLSSetting{},
+		Insecure:           true,
+		InsecureSkipVerify: false,
+		ServerName:         "",
+	},
 	LoggingTableName: "otel_logs",
 	TracingTableName: "otel_traces",
 	MetricsTableName: "otel_metrics",
