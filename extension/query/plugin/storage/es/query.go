@@ -17,6 +17,10 @@ import (
 	"time"
 )
 
+var (
+	errParsTime = fmt.Errorf("start time must before endtime")
+)
+
 const (
 	DATE_LAYOUT = "2006-01-02T15:04:05.000000000Z"
 )
@@ -28,22 +32,56 @@ type ElasticsearchQuery struct {
 	MetricsIndex string
 }
 
+func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
+
+	// boolean search query
+	query := esquery.Search()
+	query.Aggs(
+		esquery.TermsAgg("service_name_aggregation", "Resource.service.name.keyword").Order(map[string]string{"_count": "desc"}).Size(100),
+	).Size(0)
+
+	res, err := q.client.DoSearch(ctx, q.SpanIndex, query)
+	if err != nil {
+		return nil, err
+	}
+
+	var services []string
+	for _, agg := range res.Aggregations {
+		rMaps, err := DecodeSearchResult(*agg)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range rMaps {
+			switch k {
+			case "buckets":
+				values := v.([]interface{})
+				for _, value := range values {
+					nameV := value.(map[string]interface{})
+					name := nameV["key"]
+					services = append(services, name.(string))
+				}
+			}
+		}
+	}
+
+	return services, nil
+}
 func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
 	return &v1_trace.TracesData{}, nil
 }
 
-func (q *ElasticsearchQuery) FindTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
+func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
-	qsl := buildQuery(query)
+	qsl, err := buildTraceQuery(query)
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
 	if err != nil {
 		return nil, err
 	}
 
-	return DocumentsConvert(res.Hits)
+	return DocumentsResourceSpansConvert(res.Hits)
 }
 
-func (q *ElasticsearchQuery) FindLogs(ctx context.Context) (*v1_logs.LogsData, error) {
+func (q *ElasticsearchQuery) SearchLogs(ctx context.Context) (*v1_logs.LogsData, error) {
 	return nil, nil
 }
 
@@ -52,39 +90,7 @@ func (q *ElasticsearchQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, err
 }
 
 // Build the request body.
-func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
-	//{
-	//  "size": 20,
-	//  "query": {
-	//    "bool": {
-	//      "must": [
-	//        {
-	//          "range": {
-	//            "@timestamp": {
-	//              "gte": "2022-09-23T09:45:17.394924000Z",
-	//              "lte": "2022-09-23T09:45:17.394924000Z"
-	//            }
-	//          }
-	//        },
-	//        {
-	//          "term": {
-	//            "Name": {
-	//              "value": "VALUE"
-	//            }
-	//          }
-	//        },
-	//        {
-	//          "term": {
-	//            "Resource.service.name": {
-	//              "value": "VALUE"
-	//            }
-	//          }
-	//        }
-	//      ]
-	//    }
-	//  }
-	//}
-
+func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchRequest, error) {
 	// boolean search query
 	q := esquery.Search()
 	boolQ := esquery.Bool()
@@ -94,6 +100,31 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 	if params.OperationName != "" {
 		boolQ.Must(esquery.Term("Name", params.OperationName))
 	}
+
+	if !params.StartTime.IsZero() && params.EndTime.IsZero() {
+		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.UTC().String()))
+	}
+
+	if params.StartTime.IsZero() && !params.EndTime.IsZero() {
+		boolQ.Must(esquery.Range("@timestamp").Lte(params.EndTime.UTC().String()))
+	}
+
+	if !params.StartTime.IsZero() && !params.EndTime.IsZero() && params.StartTime.Before(params.EndTime) {
+		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.UTC().String()).Lte(params.EndTime.UTC().String()))
+	} else {
+		return q, errParsTime
+	}
+
+	if len(params.Tags) > 0 {
+		for k, v := range params.Tags {
+			boolQ.Must(esquery.Term(k, v))
+		}
+	}
+
+	if params.DurationMin != nil {
+		//TODO: do not support duration filters.
+	}
+
 	q.Query(boolQ)
 	if params.NumTraces > 0 {
 		q.Size(uint64(params.NumTraces))
@@ -101,19 +132,27 @@ func buildQuery(params *storage.TraceQueryParameters) *esquery.SearchRequest {
 		q.Size(uint64(20))
 	}
 
-	return q
+	return q, nil
 }
 
-func DocumentsConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {
+func DecodeSearchResult(jsonRaw json.RawMessage) (map[string]interface{}, error) {
+	rMaps := make(map[string]interface{})
+	d := json.NewDecoder(bytes.NewReader(jsonRaw))
+	d.UseNumber()
+	if err := d.Decode(&rMaps); err != nil {
+		typeErr := err.(*json.UnmarshalTypeError)
+		zap.S().Errorf("failed to decode  searchHits %s and typeErr: %s", zap.Error(err).String, typeErr.Field)
+		return nil, err
+	}
+	return rMaps, nil
+}
+
+func DocumentsResourceSpansConvert(searchHits *client.SearchHits) (*v1_trace.TracesData, error) {
 	rSpans := make([]*v1_trace.ResourceSpans, len(searchHits.Hits))
 
 	for i, hit := range searchHits.Hits {
-		rSpansMaps := make(map[string]interface{})
-		d := json.NewDecoder(bytes.NewReader(*hit.Source))
-		d.UseNumber()
-		if err := d.Decode(&rSpansMaps); err != nil {
-			typeErr := err.(*json.UnmarshalTypeError)
-			zap.S().Errorf("failed to decode  searchHits %s and typeErr: %s", zap.Error(err).String, typeErr.Field)
+		rSpansMaps, err := DecodeSearchResult(*hit.Source)
+		if err != nil {
 			return nil, err
 		}
 

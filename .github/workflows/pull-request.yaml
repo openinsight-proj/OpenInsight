@@ -51,7 +51,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.ACTIONS_TOKEN }}
       - name: Set up opentelemetry collector builder
-        run: GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.0
+        run: GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
       - name: Build otelcol
         env:
           TAG: ${{ github.sha }}
