@@ -21,6 +21,8 @@ on:
     branches:
       - main
     tags: ["v*"]
+  pull_request:
+    branches: [ "main" ]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -70,7 +72,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          #tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.REGISTRY_SERVER_ADDRESS }}:test
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
