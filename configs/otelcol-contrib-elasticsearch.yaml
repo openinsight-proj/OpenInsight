@@ -16,10 +16,6 @@ extensions:
         traces_index: otlp-spans
         user: elastic
         password: 64QZx5epX63Yy10Fqr57OFp2
-      clickhouse:
-        dsn: tcp://127.0.0.1:9000?database=default
-        ttl_days: 3
-        timeout: 5s
     tracing_query:
       storage_type: elasticsearch
     logging_query:

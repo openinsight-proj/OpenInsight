@@ -23,7 +23,7 @@ func (t *Handler) GetOperations(context.Context, *v1alpha1.GetOperationsRequest)
 
 // find traces by params
 func (t *Handler) SearchTraces(ctx context.Context, request *v1alpha1.FindTracesRequest) (*v1.TracesData, error) {
-	queryParams, err := parseTraceQueryParameters(request.Query)
+	queryParams, err := parseTraceQueryParameters(request)
 	if err != nil {
 		return nil, err
 	}
@@ -53,42 +53,44 @@ func (t *Handler) GetServices(ctx context.Context, _ *v1alpha1.GetServicesReques
 	return &v1alpha1.GetServicesResponse{Services: kvs}, nil
 }
 
-func parseTraceQueryParameters(q *v1alpha1.TraceQueryParameters) (*storage.TraceQueryParameters, error) {
+func parseTraceQueryParameters(request *v1alpha1.FindTracesRequest) (*storage.TraceQueryParameters, error) {
+	q := request.Query
 	queryParams := &storage.TraceQueryParameters{}
-	tags := map[string]string{}
+	if q != nil {
+		tags := map[string]string{}
 
-	if q.StartTime != nil {
-		queryParams.StartTime = q.StartTime.AsTime()
-	}
-	if q.EndTime != nil {
-		queryParams.EndTime = q.EndTime.AsTime()
-	}
+		if q.StartTime != nil {
+			queryParams.StartTime = q.StartTime.AsTime()
+		}
+		if q.EndTime != nil {
+			queryParams.EndTime = q.EndTime.AsTime()
+		}
 
-	if q.ServiceName != "" {
-		queryParams.ServiceName = q.ServiceName
-	}
+		if q.ServiceName != "" {
+			queryParams.ServiceName = q.ServiceName
+		}
 
-	if q.OperationName != "" {
-		queryParams.OperationName = q.OperationName
-	}
+		if q.OperationName != "" {
+			queryParams.OperationName = q.OperationName
+		}
 
-	if len(q.Attributes) > 0 {
-		for k, v := range q.Attributes {
-			tags[k] = v
+		if len(q.Attributes) > 0 {
+			for k, v := range q.Attributes {
+				tags[k] = v
+			}
+		}
+		queryParams.Tags = tags
+
+		if q.DurationMin != nil {
+			queryParams.DurationMin = q.DurationMin
+		}
+		if q.DurationMax != nil {
+			queryParams.DurationMax = q.DurationMax
+		}
+
+		if q.NumTraces > 0 {
+			queryParams.NumTraces = int(q.NumTraces)
 		}
 	}
-	queryParams.Tags = tags
-
-	if q.DurationMin != nil {
-		queryParams.DurationMin = q.DurationMin
-	}
-	if q.DurationMax != nil {
-		queryParams.DurationMax = q.DurationMax
-	}
-
-	if q.NumTraces > 0 {
-		queryParams.NumTraces = int(q.NumTraces)
-	}
 	return queryParams, nil
-
 }
