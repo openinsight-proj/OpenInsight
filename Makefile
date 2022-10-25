@@ -33,7 +33,6 @@ install-tools:
 .PHONY: build-otelcol
 build-otelcol:
 	$(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
-	mv cmd/otelcol-contrib cmd/otelcol-contrib-${GOOS}-${GOARCH}
 
 .PHONY: insight-darwin
 insight-darwin:
@@ -42,10 +41,6 @@ insight-darwin:
 .PHONY: insight-linux
 insight-linux:
 	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} make build-otelcol
-
-build-operator-crosscompile:
-	GOARCH=arm64 $(MAKE) insight-linux
-	GOARCH=amd64 $(MAKE) insight-linux
 
 .PHONY: run-otelcol
 run-otelcol:
