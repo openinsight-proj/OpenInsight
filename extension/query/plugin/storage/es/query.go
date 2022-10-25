@@ -66,9 +66,6 @@ func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
 
 	return services, nil
 }
-func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
-	return &v1_trace.TracesData{}, nil
-}
 
 func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
@@ -78,6 +75,19 @@ func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.Tr
 		return nil, err
 	}
 
+	return DocumentsResourceSpansConvert(res.Hits)
+}
+
+func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
+	qe := esquery.Search()
+	boolQ := esquery.Bool()
+	boolQ.Must(esquery.Term("TraceId", traceID))
+	qe.Query(boolQ)
+
+	res, err := q.client.DoSearch(ctx, q.SpanIndex, qe)
+	if err != nil {
+		return nil, err
+	}
 	return DocumentsResourceSpansConvert(res.Hits)
 }
 
