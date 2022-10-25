@@ -31,7 +31,7 @@ install-tools:
 
 # Build the Collector executable.
 .PHONY: build-otelcol
-build-otelcol:
+build-otelcol: install-tools
 	GOARCH=${GOARCH} $(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
 	mv cmd/otelcol-contrib cmd/otelcol-contrib-${GOOS}-${GOARCH}
 
