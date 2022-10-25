@@ -32,15 +32,15 @@ install-tools:
 # Build the Collector executable.
 .PHONY: build-otelcol
 build-otelcol:
-	$(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
+	GOARCH=${GOARCH} $(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
 
 .PHONY: insight-darwin
 insight-darwin:
-	CGO_ENABLED=0 GOOS=darwin GOPROXY=https://goproxy.cn,direct make build-otelcol
+	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOPROXY=https://goproxy.cn,direct make build-otelcol
 
 .PHONY: insight-linux
 insight-linux:
-	CGO_ENABLED=0 GOOS=linux GOPROXY=https://goproxy.cn,direct make build-otelcol
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOPROXY=https://goproxy.cn,direct make build-otelcol
 
 .PHONY: run-otelcol
 run-otelcol:
