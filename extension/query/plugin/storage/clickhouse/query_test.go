@@ -129,11 +129,11 @@ func TestSearchTraces(t *testing.T) {
 	require.NoError(t, err)
 
 	req := storage.TraceQueryParameters{
-		ServiceName: "this service [9]",
+		ServiceName: "my-otel-demo-frontend",
 		//2022-10-23 16:43:08
-		StartTime: time.Date(2022, 10, 23, 16, 43, 8, 0, time.Local),
+		StartTime: time.Date(2022, 10, 25, 13, 58, 47, 0, time.UTC),
 		//2022-10-23 16:43:14
-		EndTime: time.Date(2022, 10, 23, 16, 43, 14, 0, time.Local),
+		EndTime: time.Date(2022, 10, 25, 14, 58, 14, 0, time.UTC),
 	}
 	resp, err := query.SearchTraces(context.Background(), &req)
 	require.NoError(t, err)
@@ -169,10 +169,14 @@ func initQuery() (storage.Query, error) {
 	}
 
 	//err = truncateTracesTable(factory.client)
-	//require.NoError(t, err)
+	//if err != nil {
+	//	return nil, err
+	//}
 	//
 	//err = insertTracesDate(factory.client)
-	//require.NoError(t, err)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	query, err := factory.CreateSpanQuery()
 	if err != nil {
