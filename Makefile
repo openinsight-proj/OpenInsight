@@ -30,24 +30,24 @@ install-tools:
 	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
 
 # Build the Collector executable.
-.PHONY: build-otelcol
-build-otelcol:
+.PHONY: build-openinsight
+build-openinsight:
 	$(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
 
-.PHONY: insight-darwin
-insight-darwin:
-	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=${GOARCH} make build-otelcol
+.PHONY: openinsight-darwin
+openinsight-darwin:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=${GOARCH} make build-openinsight
 
-.PHONY: insight-linux
-insight-linux:
-	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} make build-otelcol
+.PHONY: openinsight-linux
+openinsight-linux:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} make build-openinsight
 
-.PHONY: run-otelcol
-run-otelcol:
+.PHONY: run-openinsight
+run-openinsight:
 	$(OTELCOL) --config configs/otelcol-contrib.yaml
 
-.PHONY: build-otelcol-docker
-build-otelcol-docker-multiarch: build-operator-crosscompile
+.PHONY: build-openinsight-docker
+build-openinsight-docker-multiarch: build-operator-crosscompile
 	docker buildx build \
     			--builder openinsight-multi-platform-builder \
     			--platform linux/amd64,linux/arm64 \
@@ -57,8 +57,15 @@ build-otelcol-docker-multiarch: build-operator-crosscompile
     			--push \
     			.
 
+.PHONY: build-openinsight-docker
+build-openinsight-docker: openinsight-linux
+	docker build --tag $(REGISTRY)/openinsight:$(TAG)  \
+    			--tag $(REGISTRY)/openinsight:latest  \
+    			-f ./Dockerfile \
+    			.
+
 .PHONY: run-otelcol-docker
-run-otelcol-demo: build-otelcol-docker
+run-openinsight-demo: build-openinsight-docker
 	docker-compose -f  examples/demo/docker-compose.yaml up
 
 .PHONY: add-tag
