@@ -31,6 +31,7 @@ func (t *Handler) SearchTraces(ctx context.Context, request *v1alpha1.FindTraces
 	traces, err := t.QueryService.tracingQuerySvc.SearchTraces(ctx, queryParams)
 	if err != nil {
 		zap.S().Errorf("query tracing failed: %s", zap.Error(err).String)
+		return nil, err
 	}
 
 	return traces, nil
@@ -42,7 +43,14 @@ func (t *Handler) SearchLogs(ctx context.Context, request *v1alpha1.GetLogsReque
 }
 
 func (t *Handler) GetTrace(ctx context.Context, request *v1alpha1.GetTraceRequest) (*v1.TracesData, error) {
-	return &v1.TracesData{}, nil
+	trace, err := t.QueryService.tracingQuerySvc.GetTrace(ctx, request.TraceId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.TracesData{
+		ResourceSpans: trace.ResourceSpans,
+	}, nil
 }
 
 func (t *Handler) GetServices(ctx context.Context, _ *v1alpha1.GetServicesRequest) (*v1alpha1.GetServicesResponse, error) {
