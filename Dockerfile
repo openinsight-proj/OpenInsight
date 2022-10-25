@@ -18,7 +18,7 @@ ARG USER_UID=10001
 USER ${USER_UID}
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=otelcol-contrib /otelcol-contrib /
+COPY --from=otelcol-contrib /otelcol-contrib /otelcol-contrib
 COPY configs/otelcol-contrib.yaml /etc/otelcol-contrib/config.yaml
 ENTRYPOINT ["/otelcol-contrib"]
 CMD ["--config", "/etc/otelcol-contrib/config.yaml"]
