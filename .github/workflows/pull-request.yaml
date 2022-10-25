@@ -55,4 +55,4 @@ jobs:
       - name: Build otelcol
         env:
           TAG: ${{ github.sha }}
-        run: make build-otelcol
+        run: make build-openinsight

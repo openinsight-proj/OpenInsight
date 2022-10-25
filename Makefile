@@ -27,66 +27,45 @@ all-modules:
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on GOPROXY=https://goproxy.cn,direct  go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
+	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
 
 # Build the Collector executable.
-.PHONY: build-otelcol
-build-otelcol:
+.PHONY: build-openinsight
+build-openinsight:
 	$(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
-	mv cmd/otelcol-contrib cmd/otelcol-contrib-${GOOS}-${GOARCH}
 
-.PHONY: insight-darwin
-insight-darwin:
-	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=${GOARCH} GOPROXY=https://goproxy.cn,direct make build-otelcol
+.PHONY: openinsight-darwin
+openinsight-darwin:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=${GOARCH} make build-openinsight
 
-.PHONY: insight-linux
-insight-linux:
-	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} GOPROXY=https://goproxy.cn,direct make build-otelcol
+.PHONY: openinsight-linux
+openinsight-linux:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=${GOARCH} make build-openinsight
 
-.PHONY: run-otelcol
-run-otelcol:
+.PHONY: run-openinsight
+run-openinsight:
 	$(OTELCOL) --config configs/otelcol-contrib.yaml
 
-.PHONY: build-otelcol-docker
-build-otelcol-docker: insight-linux
-	docker build --tag $(REGISTRY)/openinsight:$(TAG)  \
-    			--tag $(REGISTRY)/openinsight:latest  \
-    			-f ./Dockerfile \
-    			.
-
-.PHONY: build-otelcol-docker-multiarch
-build-otelcol-docker-multiarch:
-	echo "Building otelcol for arch = $(BUILD_ARCH)"
-	export DOCKER_CLI_EXPERIMENTAL=enabled ;\
-	docker buildx create --use --platform=$(BUILD_ARCH) --name otelcol-multi-platform-builder ;\
+.PHONY: build-openinsight-docker
+build-openinsight-docker-multiarch: build-operator-crosscompile
 	docker buildx build \
-    			--builder otelcol-multi-platform-builder \
-    			--platform $(BUILD_ARCH) \
+    			--builder openinsight-multi-platform-builder \
+    			--platform linux/amd64,linux/arm64 \
     			--tag $(REGISTRY)/openinsight:$(TAG)  \
-    			--tag $(REGISTRY)/openinsight:latest  \
-    			-f ./Dockerfile \
-    			.
-
-.PHONY: build-push-otelcol-docker
-build-push-otelcol-docker:
-	echo "Building otelcol for arch = $(BUILD_ARCH)"
-	echo "login ${REGISTRY_SERVER_ADDRESS}"
-ifneq ($(REGISTRY_USER_NAME), "")
-	docker login -u ${REGISTRY_USER_NAME} -p "${REGISTRY_PASSWORD}" ${REGISTRY_SERVER_ADDRESS}
-endif
-	export DOCKER_CLI_EXPERIMENTAL=enabled ;\
-	docker buildx create --use --platform=$(BUILD_ARCH) --name otelcol-multi-platform-builder ;\
-	docker buildx build \
-    			--builder otelcol-multi-platform-builder \
-    			--platform $(BUILD_ARCH) \
-    			--tag $(REGISTRY)/openinsight:$(TAG)  \
-    			--tag $(REGISTRY)/openinsight:latest  \
+				--tag $(REGISTRY)/openinsight:latest \
     			-f ./Dockerfile \
     			--push \
     			.
 
+.PHONY: build-openinsight-docker
+build-openinsight-docker: openinsight-linux
+	docker build --tag $(REGISTRY)/openinsight:$(TAG)  \
+    			--tag $(REGISTRY)/openinsight:latest  \
+    			-f ./Dockerfile.single \
+    			.
+
 .PHONY: run-otelcol-docker
-run-otelcol-demo: build-otelcol-docker
+run-openinsight-demo: build-openinsight-docker
 	docker-compose -f  examples/demo/docker-compose.yaml up
 
 .PHONY: add-tag
