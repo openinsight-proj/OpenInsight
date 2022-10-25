@@ -102,15 +102,15 @@ func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchReque
 	}
 
 	if !params.StartTime.IsZero() && params.EndTime.IsZero() {
-		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.UTC().String()))
+		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.Format(DATE_LAYOUT)))
 	}
 
 	if params.StartTime.IsZero() && !params.EndTime.IsZero() {
-		boolQ.Must(esquery.Range("@timestamp").Lte(params.EndTime.UTC().String()))
+		boolQ.Must(esquery.Range("@timestamp").Lte(params.EndTime.Format(DATE_LAYOUT)))
 	}
 
 	if !params.StartTime.IsZero() && !params.EndTime.IsZero() && params.StartTime.Before(params.EndTime) {
-		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.UTC().String()).Lte(params.EndTime.UTC().String()))
+		boolQ.Must(esquery.Range("@timestamp").Gte(params.StartTime.Format(DATE_LAYOUT)).Lte(params.EndTime.Format(DATE_LAYOUT)))
 	} else {
 		return q, errParsTime
 	}
