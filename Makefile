@@ -61,7 +61,7 @@ build-openinsight-docker-multiarch: build-operator-crosscompile
 build-openinsight-docker: openinsight-linux
 	docker build --tag $(REGISTRY)/openinsight:$(TAG)  \
     			--tag $(REGISTRY)/openinsight:latest  \
-    			-f ./Dockerfile \
+    			-f ./Dockerfile.single \
     			.
 
 .PHONY: run-otelcol-docker
