@@ -1,7 +1,7 @@
 FROM golang:1.18 AS builder
 WORKDIR /build
 COPY . .
-RUN make install-tools && make build-otelcol
+RUN make install-tools && make insight-linux
 
 FROM alpine:3.13 as certs
 RUN apk --update add ca-certificates
