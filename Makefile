@@ -33,6 +33,7 @@ install-tools:
 .PHONY: build-otelcol
 build-otelcol:
 	GOARCH=${GOARCH} $(BUILD_OTELCOL) --output-path=cmd/ --config=builder/otelcol-builder.yaml
+	mv cmd/otelcol-contrib cmd/otelcol-contrib-${GOOS}-${GOARCH}
 
 .PHONY: insight-darwin
 insight-darwin:
