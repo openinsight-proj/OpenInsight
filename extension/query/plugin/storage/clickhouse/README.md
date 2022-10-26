@@ -35,6 +35,7 @@ clickhouse:
 
 
 ## SQL design
+1. SearchTraces
 ```sql
 --1. filger Duration, Start with limit:  
 SELECT TraceId AS id FROM otel.otel_traces_trace_id_ts_mv WHERE Start BETWEEN '2022-10-23 23:56:18' AND '2022-10-23 23:56:21' AND (End - Start) BETWEEN 20000000 AND 100000000 ORDER BY Start DESC LIMIT 20

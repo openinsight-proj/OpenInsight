@@ -2,21 +2,16 @@ package clickhouse
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/config/configtls"
 	"io"
-	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
 var (
 	_ io.Closer = (*Factory)(nil)
-)
-
-const (
-	TIMEOUT = time.Second * 5
 )
 
 type ClickhouseType struct {
