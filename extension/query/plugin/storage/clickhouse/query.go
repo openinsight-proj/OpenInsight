@@ -49,7 +49,7 @@ const (
 	QUERY_SERVICE_SQL        = "select ServiceName from (SELECT ServiceName,Timestamp FROM %s where Timestamp between date_sub(%s,%d,now()) and now()) group by ServiceName"
 	QUERY_SERVICE_TIME_UNIT  = "DAY"
 	QUERY_SERVICE_TIME_VALUE = 1
-	QUERY_OPERATIONS_SQL     = "SELECT SpanName FROM %s WHERE ServiceName='%s' AND SpanKind='%s' GROUP BY SpanName"
+	QUERY_OPERATIONS_SQL     = "SELECT SpanName FROM %s %s GROUP BY SpanName"
 )
 
 type ClickHouseQuery struct {
@@ -86,7 +86,19 @@ type TracesModel struct {
 }
 
 func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
-	sql := fmt.Sprintf(QUERY_OPERATIONS_SQL, q.tracingTableName, query.ServiceName, query.SpanKind)
+	var whereKeywordList []string
+	if query.ServiceName != "" {
+		whereKeywordList = append(whereKeywordList, fmt.Sprintf("ServiceName='%s'", query.ServiceName))
+	}
+	if query.SpanKind != "" {
+		whereKeywordList = append(whereKeywordList, fmt.Sprintf("SpanKind='%s'", query.SpanKind))
+	}
+	whereKeywordCondition := fmt.Sprintf("WHERE %s", strings.Join(whereKeywordList, " AND "))
+	if len(whereKeywordList) == 0 {
+		whereKeywordCondition = ""
+	}
+
+	sql := fmt.Sprintf(QUERY_OPERATIONS_SQL, q.tracingTableName, whereKeywordCondition)
 	var operationList []string
 	rows, err := q.client.Query(ctx, sql)
 	if err != nil {
