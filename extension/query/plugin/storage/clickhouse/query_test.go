@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 )
 
 const (
@@ -155,6 +156,18 @@ func TestGetTrace(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 
+}
+
+func TestGetOperations(t *testing.T) {
+	query, err := initQuery()
+	require.NoError(t, err)
+
+	resp, err := query.GetOperations(context.Background(), &storage.OperationsQueryParameters{
+		ServiceName: "my-otel-demo-frontend",
+		SpanKind:    "SPAN_KIND_SERVER",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
 }
 
 func initQuery() (storage.Query, error) {

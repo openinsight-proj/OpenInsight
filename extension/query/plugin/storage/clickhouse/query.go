@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
-	"go.uber.org/zap"
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 	QUERY_SERVICE_SQL        = "select ServiceName from (SELECT ServiceName,Timestamp FROM %s where Timestamp between date_sub(%s,%d,now()) and now()) group by ServiceName"
 	QUERY_SERVICE_TIME_UNIT  = "DAY"
 	QUERY_SERVICE_TIME_VALUE = 1
+	QUERY_OPERATIONS_SQL     = "SELECT SpanName FROM %s WHERE ServiceName='%s' AND SpanKind='%s' GROUP BY SpanName"
 )
 
 type ClickHouseQuery struct {
@@ -81,6 +83,31 @@ type TracesModel struct {
 	LinksAttributes    []map[string]string `ch:"Links.Attributes"`
 	Start              time.Time           `ch:"Start"`
 	End                time.Time           `ch:"End"`
+}
+
+func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
+	sql := fmt.Sprintf(QUERY_OPERATIONS_SQL, q.tracingTableName, query.ServiceName, query.SpanKind)
+	var serviceList []string
+	rows, err := q.client.Query(ctx, sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		SpanName string `ch:"SpanName"`
+	}
+	for {
+		if !rows.Next() {
+			break
+		}
+		err = rows.ScanStruct(&result)
+		if err != nil {
+			return nil, err
+		}
+		serviceList = append(serviceList, result.SpanName)
+	}
+
+	return serviceList, nil
 }
 
 func (q *ClickHouseQuery) GetService(ctx context.Context) ([]string, error) {
@@ -140,10 +167,6 @@ func (q *ClickHouseQuery) SearchLogs(ctx context.Context) (*v1_logs.LogsData, er
 	return nil, nil
 }
 func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {
-	return nil, nil
-}
-
-func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
 	return nil, nil
 }
 
