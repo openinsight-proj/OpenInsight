@@ -162,12 +162,35 @@ func TestGetOperations(t *testing.T) {
 	query, err := initQuery()
 	require.NoError(t, err)
 
-	resp, err := query.GetOperations(context.Background(), &storage.OperationsQueryParameters{
-		ServiceName: "my-otel-demo-frontend",
-		SpanKind:    "SPAN_KIND_SERVER",
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
+	tests := []struct {
+		param storage.OperationsQueryParameters
+	}{
+		{
+			param: storage.OperationsQueryParameters{},
+		},
+		{
+			param: storage.OperationsQueryParameters{
+				ServiceName: "tracegen",
+			},
+		},
+		{
+			param: storage.OperationsQueryParameters{
+				SpanKind: "SPAN_KIND_INTERNAL",
+			},
+		},
+		{
+			param: storage.OperationsQueryParameters{
+				ServiceName: "tracegen",
+				SpanKind:    "SPAN_KIND_INTERNAL",
+			},
+		},
+	}
+	for _, c := range tests {
+		resp, err := query.GetOperations(context.Background(), &c.param)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+	}
+
 }
 
 func initQuery() (storage.Query, error) {
