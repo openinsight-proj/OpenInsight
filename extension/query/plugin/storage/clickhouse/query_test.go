@@ -44,15 +44,12 @@ const (
 )
 
 func TestBuildQuery(t *testing.T) {
-	factory := NewFactory(&ct)
-	require.NotNil(t, factory)
-
-	err := factory.Initialize(&zap.Logger{})
-	require.NoError(t, err)
-
 	tests := []struct {
 		param storage.TraceQueryParameters
 	}{
+		{
+			param: storage.TraceQueryParameters{},
+		},
 		{
 			param: storage.TraceQueryParameters{
 				ServiceName: "this service [9]",
@@ -83,7 +80,7 @@ func TestBuildQuery(t *testing.T) {
 					"Tag_b": "tag_b_value",
 				},
 				StartTime: time.Now(),
-				EndTime:   time.Now().Add(time.Second * 3),
+				EndTime:   time.Now().Add(time.Hour),
 			},
 		},
 		{
