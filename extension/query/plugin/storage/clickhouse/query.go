@@ -87,7 +87,7 @@ type TracesModel struct {
 
 func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
 	sql := fmt.Sprintf(QUERY_OPERATIONS_SQL, q.tracingTableName, query.ServiceName, query.SpanKind)
-	var serviceList []string
+	var operationList []string
 	rows, err := q.client.Query(ctx, sql)
 	if err != nil {
 		return nil, err
@@ -104,10 +104,10 @@ func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.Oper
 		if err != nil {
 			return nil, err
 		}
-		serviceList = append(serviceList, result.SpanName)
+		operationList = append(operationList, result.SpanName)
 	}
 
-	return serviceList, nil
+	return operationList, nil
 }
 
 func (q *ClickHouseQuery) GetService(ctx context.Context) ([]string, error) {
