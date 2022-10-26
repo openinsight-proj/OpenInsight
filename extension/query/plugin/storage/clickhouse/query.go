@@ -143,6 +143,10 @@ func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 	return nil, nil
 }
 
+func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
+	return nil, nil
+}
+
 func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, error) {
 	var whereKeywordList []string
 	if query.ServiceName != "" {

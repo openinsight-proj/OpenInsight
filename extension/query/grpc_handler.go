@@ -13,11 +13,24 @@ type Handler struct {
 	QueryService *QueryService
 }
 
-func (t *Handler) GetOperations(context.Context, *v1alpha1.GetOperationsRequest) (*v1alpha1.GetOperationsResponse, error) {
+func (t *Handler) GetOperations(ctx context.Context, req *v1alpha1.GetOperationsRequest) (*v1alpha1.GetOperationsResponse, error) {
+	queryParams := &storage.OperationsQueryParameters{}
+	if req.GetService() != "" {
+		queryParams.ServiceName = req.Service
+	}
 
-	//TODO:
+	if req.SpanKind != "" {
+		queryParams.SpanKind = req.SpanKind
+	}
+
+	operations, err := t.QueryService.tracingQuerySvc.GetOperations(ctx, queryParams)
+	if err != nil {
+		zap.S().Errorf("query operations failed: %s", zap.Error(err).String)
+		return nil, err
+	}
+
 	return &v1alpha1.GetOperationsResponse{
-		Operations: nil,
+		Names: operations,
 	}, nil
 }
 

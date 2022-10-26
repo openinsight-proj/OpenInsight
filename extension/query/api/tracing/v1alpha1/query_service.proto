@@ -79,7 +79,7 @@ message Operation {
 
 // Response object to get operation names.
 message GetOperationsResponse {
-  repeated Operation operations = 1;
+  repeated string names = 1;
 }
 
 service QueryService {

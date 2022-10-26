@@ -99,6 +99,53 @@ func (q *ElasticsearchQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, err
 	return nil, nil
 }
 
+func (q *ElasticsearchQuery) GetOperations(ctx context.Context, params *storage.OperationsQueryParameters) ([]string, error) {
+	// boolean search query
+	query := esquery.Search()
+	boolQ := esquery.Bool()
+
+	if params.ServiceName != "" {
+		boolQ.Must(esquery.Term("Resource.service.name", params.ServiceName))
+	}
+	if params.SpanKind != "" {
+		boolQ.Must(esquery.Term("Kind.keyword", params.SpanKind))
+	} else {
+		// query CLIENT/SEVER as ingress/egress default
+		boolQ.MustNot(esquery.Term("Kind.keyword", "SPAN_KIND_INTERNAL"))
+	}
+
+	query.Query(boolQ)
+	query.Aggs(
+		esquery.TermsAgg("service_operations", "Name.keyword").Order(map[string]string{"_count": "desc"}).Size(10000),
+	).Size(0)
+
+	res, err := q.client.DoSearch(ctx, q.SpanIndex, query)
+	if err != nil {
+		return nil, err
+	}
+
+	var operations []string
+	for _, agg := range res.Aggregations {
+		rMaps, err := DecodeSearchResult(*agg)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range rMaps {
+			switch k {
+			case "buckets":
+				values := v.([]interface{})
+				for _, value := range values {
+					nameV := value.(map[string]interface{})
+					name := nameV["key"]
+					operations = append(operations, name.(string))
+				}
+			}
+		}
+	}
+
+	return operations, nil
+}
+
 // Build the request body.
 func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchRequest, error) {
 	// boolean search query
