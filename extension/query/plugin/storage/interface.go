@@ -14,6 +14,7 @@ type Query interface {
 	SearchLogs(ctx context.Context) (*v1_logs.LogsData, error)
 	GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 	GetService(ctx context.Context) ([]string, error)
+	GetOperations(ctx context.Context, query *OperationsQueryParameters) ([]string, error)
 
 	//TODO: add metrics query.
 }
@@ -28,4 +29,10 @@ type TraceQueryParameters struct {
 	DurationMin   *duration.Duration
 	DurationMax   *duration.Duration
 	NumTraces     int
+}
+
+type OperationsQueryParameters struct {
+	ServiceName string
+	// optional
+	SpanKind string
 }

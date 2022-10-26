@@ -726,10 +726,10 @@
     "v1alpha1GetOperationsResponse": {
       "type": "object",
       "properties": {
-        "operations": {
+        "names": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1alpha1Operation"
+            "type": "string"
           }
         }
       },
@@ -746,18 +746,6 @@
         }
       },
       "description": "Response object to get service names."
-    },
-    "v1alpha1Operation": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "spanKind": {
-          "type": "string"
-        }
-      },
-      "description": "Operation encapsulates information about operation."
     },
     "v1alpha1TraceQueryParameters": {
       "type": "object",
