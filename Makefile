@@ -27,7 +27,7 @@ all-modules:
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
+	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.63.0
 
 # Build the Collector executable.
 .PHONY: build-openinsight
