@@ -9,7 +9,7 @@ import (
 )
 
 var ct = ClickhouseType{
-	Dsn: "tcp://10.6.229.191:32022/otel",
+	Dsn: "tcp://127.0.0.1:9000/otel",
 	TlsClientSetting: configtls.TLSClientSetting{
 		TLSSetting:         configtls.TLSSetting{},
 		Insecure:           true,
