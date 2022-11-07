@@ -12,7 +12,7 @@ extensions:
         endpoint: 0.0.0.0:18889
     storage:
       clickhouse:
-        dsn: tcp://default:changeme@172.16.188.1:30544/otel
+        dsn: tcp://default:changeme@localhost:9000/otel
         tls:
           insecure: true
           insecure_skip_verify: true
@@ -60,7 +60,7 @@ exporters:
     const_labels:
       label1: value1
   clickhouse:
-    dsn: tcp://default:changeme@172.16.188.1:30544/otel
+    dsn: tcp://default:changeme@localhost:9000/otel
     logs_table_name: otel_logs
     traces_table_name: otel_traces
     timeout: 10s
