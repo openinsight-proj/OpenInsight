@@ -4,50 +4,47 @@
 
 ```sql
 ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-Resource_schema_url String CODEC(ZSTD(1)),
-
-Scope_Name String CODEC(ZSTD(1)),
-Scope_Version String CODEC(ZSTD(1)),
-Scope_Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-Scope_Dropped_Attributes_Count UInt32 CODEC(ZSTD(1)),
-Scope_schema_url String CODEC(ZSTD(1)),
-
-metric_name String CODEC(ZSTD(1)),
-metric_description String CODEC(ZSTD(1)),
-metric_unit String CODEC(ZSTD(1)),
-
+ResourceSchemaUrl String CODEC(ZSTD(1)),
+ScopeName String CODEC(ZSTD(1)),
+ScopeVersion String CODEC(ZSTD(1)),
+ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+ScopeDroppedAttributesCount UInt32 CODEC(ZSTD(1)),
+ScopeSchemaUrl String CODEC(ZSTD(1)),
+MetricName String CODEC(ZSTD(1)),
+MetricDescription String CODEC(ZSTD(1)),
+MetricUnit String CODEC(ZSTD(1)),
 ```
 
 ## NumberDataPoint Filed
 
 ```sql
-_attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-_start_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-_value_as_double Float64 CODEC(ZSTD(1),
-_value_as_int UInt32 CODEC(ZSTD(1)),
-_flags UInt32  CODEC(ZSTD(1)),
-_exemplars Nested (
-    filtered_attributes Map(LowCardinality(String), String),
-    time_unix_nano DateTime64(9),
-    value_as_double Float64,
-  	value_as_int UInt32,
-    span_id String,
-    trace_id String
-)
+Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+StartTime DateTime64(9) CODEC(Delta, ZSTD(1)),
+TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+ValueAsDouble Float64 CODEC(ZSTD(1)),
+ValueAsInt UInt32 CODEC(ZSTD(1)),
+Flags UInt32  CODEC(ZSTD(1)),
+Exemplars Nested (
+    filteredAttributes Map(LowCardinality(String), String),
+    timeUnix DateTime64(9),
+    valueAsDouble Float64,
+  	valueAsInt UInt32,
+    spanId String,
+    traceId String
+) CODEC(ZSTD(1))
 ```
 
 ## HistogramDataPoint Filed
 
 ```sql
-_attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-_start_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-_count Int64 CODEC(Delta, ZSTD(1)),
-_sum Float64 CODEC(ZSTD(1),
-_bucket_counts array(Float64) CODEC(ZSTD(1),
-_explicit_bounds array(Float64) CODEC(ZSTD(1),
-_exemplars Nested (
+Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+StartTime DateTime64(9) CODEC(Delta, ZSTD(1)),
+TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+Count Int64 CODEC(ZSTD(1)),
+Sum Float64 CODEC(ZSTD(1),
+BucketCounts array(Float64) CODEC(ZSTD(1)),
+ExplicitBounds array(Float64) CODEC(ZSTD(1)),
+Exemplars Nested (
     filtered_attributes Map(LowCardinality(String), String),
     time_unix_nano DateTime64(9),
     value_as_double Float64,
@@ -55,27 +52,27 @@ _exemplars Nested (
     span_id String,
     trace_id String
 )
-_flags UInt32  CODEC(ZSTD(1)),
-_min Float64 CODEC(ZSTD(1),
-_max Float64 CODEC(ZSTD(1),
+Flags UInt32  CODEC(ZSTD(1)),
+Min Float64 CODEC(ZSTD(1),
+Max Float64 CODEC(ZSTD(1),
 ```
 
 ## ExponentialHistogramDataPoint Filed
 
 ```sql
-_attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-_start_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-_count Int64 CODEC(Delta, ZSTD(1)),
-_sum Float64 CODEC(ZSTD(1),
-_scale Int32 CODEC(ZSTD(1),
-_zero_count Float64 CODEC(ZSTD(1),
-_positive_offset Int32 CODEC(ZSTD(1),
-_positive_bucket_counts array(UInt32) CODEC(ZSTD(1),
-_negative_offset Int32 CODEC(ZSTD(1),
-_negative_bucket_counts array(UInt32) CODEC(ZSTD(1),
-_flags UInt32  CODEC(ZSTD(1)),
-_exemplars Nested (
+Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+Start_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
+TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+Count Int64 CODEC(Delta, ZSTD(1)),
+Sum Float64 CODEC(ZSTD(1),
+Scale Int32 CODEC(ZSTD(1),
+ZeroCount Float64 CODEC(ZSTD(1),
+Positive_offset Int32 CODEC(ZSTD(1),
+Positive_bucket_counts array(UInt32) CODEC(ZSTD(1),
+Negative_offset Int32 CODEC(ZSTD(1),
+Negative_bucket_counts array(UInt32) CODEC(ZSTD(1),
+Flags UInt32  CODEC(ZSTD(1)),
+Exemplars Nested (
     filtered_attributes Map(LowCardinality(String), String),
     time_unix_nano DateTime64(9),
     value_as_double Float64,
@@ -106,42 +103,37 @@ _flags UInt32  CODEC(ZSTD(1)),
 
 ### Gauge
 
-#### Filed
-
-```sql
-ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-Resource_schema_url String CODEC(ZSTD(1)),
-
-Scope_Name String CODEC(ZSTD(1)),
-Scope_Version String CODEC(ZSTD(1)),
-Scope_Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-Scope_Dropped_Attributes_Count UInt32 CODEC(ZSTD(1)),
-Scope_schema_url String CODEC(ZSTD(1)),
-
-metric_name String CODEC(ZSTD(1)),
-metric_description String CODEC(ZSTD(1)),
-metric_unit String CODEC(ZSTD(1)),
-
-gauge_attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-gauge_start_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-gauge_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-gauge_value_as_double Float64 CODEC(ZSTD(1),
-gauge_value_as_int UInt32 CODEC(ZSTD(1)),
-gauge_flags UInt32  CODEC(ZSTD(1)),
-gauge_exemplars Nested (
-    filtered_attributes Map(LowCardinality(String), String),
-    time_unix_nano DateTime64(9),
-    value_as_double Float64,
-  	value_as_int UInt32,
-    span_id String,
-    trace_id String
-)
-```
-
-#### Table Creation SQL
-
-```
-TUDO...
+```SQL
+CREATE TABLE IF NOT EXISTS %s (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttributesCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    StartTime DateTime64(9) CODEC(Delta, ZSTD(1)),
+    TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    ValueAsDouble Float64 CODEC(ZSTD(1)),
+    ValueAsInt UInt32 CODEC(ZSTD(1)),
+    Flags UInt32  CODEC(ZSTD(1)),
+    Exemplars Nested (
+    filteredAttributes Map(LowCardinality(String), String),
+    timeUnix DateTime64(9),
+    valueAsDouble Float64,
+    valueAsInt UInt32,
+    spanId String,
+    trace)d String
+    ) CODEC(ZSTD(1))
+) ENGINE MergeTree()
+TTL toDateTime(TimeUnix) + toIntervalDay(%d)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 ```
 
 ### Sum
