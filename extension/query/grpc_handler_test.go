@@ -238,3 +238,7 @@ func (m *MockQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error) {
 func (m *MockQuery) GetService(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
+
+func (m *MockQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
+	return nil, nil
+}
