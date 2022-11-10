@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Extensions), 2)
 	defaultCfg := factory.CreateDefaultConfig()
 
-	defaultCfg.(*Config).TracingQuery.StorageType = "elasticsearch"
+	defaultCfg.(*Config).TracingQuery.StorageType = "clickhouse"
 	defaultCfg.(*Config).MetricsQuery.StorageType = "elasticsearch"
 	defaultCfg.(*Config).LoggingQuery.StorageType = "elasticsearch"
 
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	defaultCfg.(*Config).Storage.ClickhouseType = &clickhouse.ClickhouseType{
-		Dsn: "tcp://127.0.0.1:9000/default",
+		Dsn: "tcp://127.0.0.1:9000/otel",
 		TlsClientSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
