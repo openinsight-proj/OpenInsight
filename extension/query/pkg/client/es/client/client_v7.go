@@ -10,7 +10,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"go.uber.org/zap"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -74,7 +73,7 @@ func (e *Elastic) DoSearch(ctx context.Context, index string, qsl *esquery.Searc
 func parseBody(response *esapi.Response) (*SearchResult, error) {
 	// Return search results
 	ret := new(SearchResult)
-	ioBytes, err := ioutil.ReadAll(response.Body)
+	ioBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		zap.S().Error("Failed read search result: %s", err)
 	}

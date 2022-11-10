@@ -3,7 +3,7 @@ package client
 import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -15,7 +15,7 @@ func TestParseBody(t *testing.T) {
 	if err != nil {
 		log.Printf("read failed: %s", err)
 	}
-	res := &esapi.Response{StatusCode: 200, Body: ioutil.NopCloser(strings.NewReader(string(content)))}
+	res := &esapi.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(string(content)))}
 
 	results, err := parseBody(res)
 	if err != nil {
