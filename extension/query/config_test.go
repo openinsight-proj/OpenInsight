@@ -41,7 +41,17 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.(*Config).Storage.ClickhouseType = &clickhouse.ClickhouseType{
 		Dsn: "tcp://127.0.0.1:9000/otel",
 		TlsClientSetting: configtls.TLSClientSetting{
-			Insecure: true,
+			TLSSetting: configtls.TLSSetting{
+				CAFile:         "",
+				CertFile:       "",
+				KeyFile:        "",
+				MinVersion:     "",
+				MaxVersion:     "",
+				ReloadInterval: 0,
+			},
+			Insecure:           true,
+			InsecureSkipVerify: false,
+			ServerName:         "",
 		},
 		LoggingTableName: "otel_logs",
 		TracingTableName: "otel_traces",
@@ -49,5 +59,6 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	r0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, defaultCfg)
+	queryConfig := r0.(*Config)
+	assert.Equal(t, queryConfig.TracingQuery.StorageType, defaultCfg.(*Config).TracingQuery.StorageType)
 }
