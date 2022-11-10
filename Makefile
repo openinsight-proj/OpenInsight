@@ -99,6 +99,10 @@ gotest:
 gofmt:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="fmt"
 
+.PHONY: golint
+golint:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
+
 # Define a delegation target for each module
 .PHONY: $(ALL_MODS)
 $(ALL_MODS):

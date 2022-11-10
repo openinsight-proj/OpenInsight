@@ -109,7 +109,7 @@ fmt:
 	goimports -w  -local github.com/openinsight-proj/OpenInsight ./
 
 .PHONY: lint
-lint: checklicense misspell
+lint: misspell
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: tidy

@@ -25,8 +25,6 @@ type ElasticsearchType struct {
 
 // Factory implements storage.Factory for Elasticsearch as storage.
 type Factory struct {
-	logger *zap.Logger
-
 	client *client.Elastic
 	cfg    *ElasticsearchType
 }
@@ -34,6 +32,7 @@ type Factory struct {
 func (f *Factory) Initialize(logger *zap.Logger) error {
 	c, err := client.New(f.cfg.Endpoints, f.cfg.User, f.cfg.Password)
 	if err != nil {
+		logger.Error("initialize es client error")
 		return err
 	}
 	f.client = c

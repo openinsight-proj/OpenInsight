@@ -21,7 +21,6 @@ const maxMsgSize = 20 * 1024 * 1024
 type queryServer struct {
 	config           *Config
 	logger           *zap.Logger
-	stopCh           chan struct{}
 	cmux             cmux.CMux
 	router           *mux.Router
 	httpServer       *http.Server
