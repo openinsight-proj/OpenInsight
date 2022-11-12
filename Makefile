@@ -74,8 +74,8 @@ build-openinsight-docker-multiarch: build-operator-crosscompile
 
 .PHONY: build-openinsight-docker
 build-openinsight-docker: openinsight-linux
-	docker build --tag $(REGISTRY)/openinsight:$(TAG)  \
-    			--tag $(REGISTRY)/openinsight:latest  \
+	docker build --tag $(REGISTRY)/openinsight-proj/openinsight:$(TAG)  \
+    			--tag $(REGISTRY)/openinsight-proj/openinsight:dev  \
     			-f ./Dockerfile.single \
     			.
 

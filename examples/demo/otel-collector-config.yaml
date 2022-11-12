@@ -14,22 +14,19 @@ exporters:
     const_labels:
       label1: value1
   logging:
-  elasticsearch/trace:
-    tls:
-      insecure: true
-      insecure_skip_verify: true
-    endpoints: [http://elasticsearch:9200]
-    timeout: 2m
-    traces_index: trace_index
-    user: elastic
-    password: XAlJ948ZY0leE320SQ6hfv17
-    discover:
-      on_start: true
-    flush:
-      bytes: 10485760
-    retry:
-      max_requests: 5
-
+  clickhouse:
+    dsn: tcp://default:changeme@clickhouse:9000/openinsight
+    logs_table_name: openinsight_logs
+    traces_table_name: openinsight_traces
+    ttl_days: 3
+    timeout: 10s
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
 processors:
   batch:
 
@@ -46,21 +43,19 @@ extensions:
       grpc:
         endpoint: 0.0.0.0:18889
     storage:
-      elasticsearch:
-        endpoints: [ "http://elasticsearch:9200" ]
-        traces_index: trace_index
-        user: elastic
-        password: search
       clickhouse:
-        dsn: tcp://127.0.0.1:9000?database=default
-        ttl_days: 3
-        timeout: 5s
+        dsn: tcp://default:changeme@clickhouse:9000/openinsight
+        logging_table_name: openinsight_logs
+        tracing_table_name: openinsight_traces
+        metrics_table_name: openinsight_metrics
+        tls:
+          insecure: true
     tracing_query:
-      storage_type: elasticsearch
+      storage_type: clickhouse
     logging_query:
-      storage_type: elasticsearch
+      storage_type: clickhouse
     metrics_query:
-      storage_type: elasticsearch
+      storage_type: clickhouse
 
 service:
   extensions: [pprof, zpages, query, health_check]
@@ -68,7 +63,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, elasticsearch/trace]
+      exporters: [logging, clickhouse]
     metrics:
       receivers: [otlp]
       processors: [batch]
