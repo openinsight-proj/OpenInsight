@@ -12,7 +12,7 @@ extensions:
         endpoint: 0.0.0.0:18889
     storage:
       clickhouse:
-        dsn: tcp://default:changeme@localhost:9000/otel
+        dsn: tcp://default:changeme@localhost:9000/openinsight
         tls:
           insecure: true
           insecure_skip_verify: true
@@ -63,7 +63,7 @@ exporters:
     const_labels:
       label1: value1
   clickhouse:
-    dsn: tcp://default:changeme@localhost:9000/otel
+    dsn: tcp://default:changeme@localhost:9000/openinsight
     logs_table_name: openinsight__logs
     traces_table_name: openinsight__traces
     timeout: 10s
