@@ -13,8 +13,11 @@ extensions:
     storage:
       clickhouse:
         dsn: tcp://172.16.188.6:9000?database=otel
-        ttl_days: 3
-        timeout: 5s
+        tls:
+          insecure: true
+        logging_table_name: openinsight_logs
+        tracing_table_name: openinsight_traces
+        metrics_table_name: openinsight_metrics
     tracing_query:
       storage_type: clickhouse
     logging_query:
@@ -60,8 +63,8 @@ exporters:
       label1: value1
   clickhouse:
     dsn: tcp://172.16.188.6:9000/otel
-    logs_table_name: otel_logs
-    traces_table_name: otel_traces
+    logs_table_name: openinsight__logs
+    traces_table_name: openinsight__traces
     ttl_days: 3
     timeout: 10s
     sending_queue:
