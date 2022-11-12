@@ -71,7 +71,6 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 						e.logger.Error("unsupported metrics type")
 					}
 				}
-				//inject metadata
 				injectMetaData(metricsMap, &metaData)
 			}
 		}
@@ -171,9 +170,10 @@ func createMetricsTable(cfg *Config, db *sql.DB) error {
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	if _, err := db.Exec(fmt.Sprintf(createGaugeTableSQL, cfg.MetricsTableName, ttlExpr)); err != nil {
-		return fmt.Errorf("exec create traces table sql: %w", err)
+	if _, err := db.Exec(fmt.Sprintf(createGaugeTableSQL, cfg.MetricsTableName+"_gauge", ttlExpr)); err != nil {
+		return fmt.Errorf("exec create gauge table sql: %w", err)
 	}
+	//todo others
 	return nil
 }
 

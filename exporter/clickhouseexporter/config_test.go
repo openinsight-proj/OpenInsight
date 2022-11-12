@@ -51,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		TTLDays:          3,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
+		MetricsTableName: "otel_metrics",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 5 * time.Second,
 		},
