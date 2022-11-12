@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS %s (
     valueAsDouble Float64,
     valueAsInt UInt32,
     spanId String,
-    trace)d String
+    traceId) String
     ) CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 TTL toDateTime(TimeUnix) + toIntervalDay(%d)

@@ -37,6 +37,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithLogsExporter(createLogsExporter, stability),
 		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricExporter, stability),
 	)
 }
 
@@ -48,6 +49,7 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
+		MetricsTableName: "otel_metrics",
 		TTLDays:          7,
 	}
 }
@@ -95,6 +97,29 @@ func createTracesExporter(
 		set,
 		cfg,
 		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.enforcedQueueSettings()),
+		exporterhelper.WithRetry(c.RetrySettings),
+	)
+}
+
+func createMetricExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.MetricsExporter, error) {
+	c := cfg.(*Config)
+	exporter, err := newMetricsExporter(set.Logger, c)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure clickhouse metrics exporter: %w", err)
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushMetricsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.enforcedQueueSettings()),

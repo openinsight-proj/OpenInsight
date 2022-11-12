@@ -57,6 +57,19 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
 
+func TestFactory_CreateMetricsExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.DSN = defaultDSN
+	})
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.TODO()))
+}
+
 func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
