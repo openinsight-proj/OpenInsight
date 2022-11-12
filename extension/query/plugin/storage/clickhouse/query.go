@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	SUB_SQL = "SELECT TraceId AS id FROM %s_trace_id_ts %s ORDER BY Start DESC %s"
-	COLUMNS = `a.Timestamp,
+	SUB_SQL        = "SELECT TraceId AS id FROM %s_trace_id_ts %s ORDER BY Start DESC %s"
+	TRACES_COLUMNS = `a.Timestamp,
        a.TraceId,
        a.SpanId,
        a.ParentSpanId,
@@ -39,6 +39,9 @@ const (
        a.Links.SpanId,
        a.Links.TraceState,
        a.Links.Attributes`
+	SERVICE_COLUMNS = `a.Timestamp,
+       a.ServiceName,
+       a.ResourceAttributes`
 	BASE_SQL = `SELECT %s FROM
        (%s) AS b JOIN
        %s AS a on b.id = a.TraceId %s`
@@ -58,6 +61,12 @@ type ClickHouseQuery struct {
 	loggingTableName string
 	tracingTableName string
 	metricsTableName string
+}
+
+type ServiceModel struct {
+	ServiceName        string            `ch:"ServiceName"`
+	ResourceAttributes map[string]string `ch:"ResourceAttributes"`
+	Timestamp          time.Time         `ch:"Timestamp"`
 }
 
 type TracesModel struct {
@@ -122,29 +131,15 @@ func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.Oper
 	return operationList, nil
 }
 
-func (q *ClickHouseQuery) GetService(ctx context.Context) ([]string, error) {
-	sql := fmt.Sprintf(QUERY_SERVICE_SQL, q.tracingTableName, QUERY_SERVICE_TIME_UNIT, QUERY_SERVICE_TIME_VALUE)
-	var serviceList []string
-	rows, err := q.client.Query(ctx, sql)
-	if err != nil {
+func (q *ClickHouseQuery) GetService(ctx context.Context) ([]*v1_resource.Resource, error) {
+	sql := fmt.Sprintf("SELECT %s FROM %s AS a", SERVICE_COLUMNS)
+
+	var result []ServiceModel
+	if err := q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
 	}
 
-	var result struct {
-		ServiceName string `ch:"ServiceName"`
-	}
-	for {
-		if !rows.Next() {
-			break
-		}
-		err = rows.ScanStruct(&result)
-		if err != nil {
-			return nil, err
-		}
-		serviceList = append(serviceList, result.ServiceName)
-	}
-
-	return serviceList, nil
+	return parseServiceResults(result), nil
 }
 
 func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
@@ -152,7 +147,7 @@ func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_tra
 		return nil, errors.New("traceID must not empty")
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s AS a WHERE a.TraceId='%s'", COLUMNS, q.tracingTableName, traceID)
+	sql := fmt.Sprintf("SELECT %s FROM %s AS a WHERE a.TraceId='%s'", TRACES_COLUMNS, q.tracingTableName, traceID)
 	var result []TracesModel
 	if err := q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
@@ -232,7 +227,18 @@ func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, 
 	}
 
 	subQuery := fmt.Sprintf(SUB_SQL, tableName, whereTimeCondition, limitCondition)
-	return fmt.Sprintf(BASE_SQL, COLUMNS, subQuery, tableName, whereKeywordCondition), nil
+	return fmt.Sprintf(BASE_SQL, TRACES_COLUMNS, subQuery, tableName, whereKeywordCondition), nil
+}
+
+func parseServiceResults(models []ServiceModel) []*v1_resource.Resource {
+	services := make([]*v1_resource.Resource, len(models))
+	for _, item := range models {
+		s := v1_resource.Resource{
+			Attributes: convertAttributes(item.ResourceAttributes),
+		}
+		services = append(services, &s)
+	}
+	return services
 }
 
 func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
