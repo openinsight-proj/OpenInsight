@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 )
 
 var ct = ClickhouseType{
@@ -19,14 +18,6 @@ var ct = ClickhouseType{
 	LoggingTableName: "otel_logs",
 	TracingTableName: "otel_traces",
 	MetricsTableName: "otel_metrics",
-}
-
-func TestInitialize(t *testing.T) {
-	factory := NewFactory(&ct)
-	require.NotNil(t, factory)
-
-	err := factory.Initialize(&zap.Logger{})
-	require.NoError(t, err)
 }
 
 func TestCreateSpanQuery(t *testing.T) {

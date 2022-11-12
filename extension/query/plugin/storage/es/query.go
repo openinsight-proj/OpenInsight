@@ -70,6 +70,9 @@ func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
 func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
 	qsl, err := buildTraceQuery(query)
+	if err != nil {
+		return nil, err
+	}
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
 	if err != nil {
 		return nil, err
@@ -178,9 +181,9 @@ func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchReque
 		}
 	}
 
-	if params.DurationMin != nil {
-		//TODO: do not support duration filters.
-	}
+	//TODO: do not support duration filters.
+	//if params.DurationMin != nil {
+	//}
 
 	q.Query(boolQ)
 	if params.NumTraces > 0 {
