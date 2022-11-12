@@ -29,26 +29,28 @@ services:
     depends_on:
       - clickhouse
 
-#  demo-client:
-#    build:
-#      dockerfile: Dockerfile
-#      context: ./client
-#    environment:
-#      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
-#      - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
-#    depends_on:
-#      - demo-server
+  demo-client:
+    build:
+      dockerfile: Dockerfile
+      context: ./client
+    restart: always
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
+    depends_on:
+      - demo-server
 
-#  demo-server:
-#    build:
-#      dockerfile: Dockerfile
-#      context: ./server
-#    environment:
-#      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
-#    ports:
-#      - "7080"
-#    depends_on:
-#      - otel-collector
+  demo-server:
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: ./server
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+    ports:
+      - "7080"
+    depends_on:
+      - openinsight
 
   prometheus:
     container_name: prometheus

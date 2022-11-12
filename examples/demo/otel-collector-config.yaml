@@ -48,7 +48,7 @@ extensions:
         logging_table_name: openinsight_logs
         tracing_table_name: openinsight_traces
         metrics_table_name: openinsight_metrics
-        tls_setting:
+        tls:
           insecure: true
     tracing_query:
       storage_type: clickhouse

@@ -12,7 +12,7 @@ extensions:
         password: search
       clickhouse:
         dsn: tcp://127.0.0.1:9000/default
-        tls_setting:
+        tls:
           insecure: true
         tracing_table_name: otel_traces
         logging_table_name: otel_logs
