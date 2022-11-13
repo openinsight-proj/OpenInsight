@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	SUB_SQL = "SELECT TraceId AS id FROM %s_trace_id_ts %s ORDER BY Start DESC %s"
-	COLUMNS = `a.Timestamp,
+	SUB_SQL        = "SELECT TraceId AS id FROM %s_trace_id_ts %s ORDER BY Start DESC %s"
+	TRACES_COLUMNS = `a.Timestamp,
        a.TraceId,
        a.SpanId,
        a.ParentSpanId,
@@ -42,11 +42,12 @@ const (
 	BASE_SQL = `SELECT %s FROM
        (%s) AS b JOIN
        %s AS a on b.id = a.TraceId %s`
-	TIME_PATTERN             = "Start BETWEEN '%s' AND '%s'"
-	LIMIT_PATTERN            = "LIMIT %d"
-	DEFAULT_LIMIT_NUM        = 20
-	DATETIME_LAYOUT          = "2006-01-02 15:04:05"
-	QUERY_SERVICE_SQL        = "select ServiceName from (SELECT ServiceName,Timestamp FROM %s where Timestamp between date_sub(%s,%d,now()) and now()) group by ServiceName"
+	TIME_PATTERN      = "Start BETWEEN '%s' AND '%s'"
+	LIMIT_PATTERN     = "LIMIT %d"
+	DEFAULT_LIMIT_NUM = 20
+	DATETIME_LAYOUT   = "2006-01-02 15:04:05"
+	//TODO: refactoring query service SQL.
+	QUERY_SERVICE_SQL        = "SELECT c.ServiceName,c.ResourceAttributes,max(c.Timestamp) FROM %s AS c JOIN (SELECT ServiceName,max(Timestamp) as latest_record FROM %s group by ServiceName) as d On d.ServiceName = c.ServiceName AND c.Timestamp=latest_record GROUP BY c.ServiceName, c.ResourceAttributes,c.Timestamp"
 	QUERY_SERVICE_TIME_UNIT  = "DAY"
 	QUERY_SERVICE_TIME_VALUE = 1
 	QUERY_OPERATIONS_SQL     = "SELECT SpanName FROM %s %s GROUP BY SpanName"
@@ -58,6 +59,12 @@ type ClickHouseQuery struct {
 	loggingTableName string
 	tracingTableName string
 	metricsTableName string
+}
+
+type ServiceModel struct {
+	ServiceName        string            `ch:"ServiceName"`
+	ResourceAttributes map[string]string `ch:"ResourceAttributes"`
+	Timestamp          time.Time         `ch:"Timestamp"`
 }
 
 type TracesModel struct {
@@ -122,29 +129,15 @@ func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.Oper
 	return operationList, nil
 }
 
-func (q *ClickHouseQuery) GetService(ctx context.Context) ([]string, error) {
-	sql := fmt.Sprintf(QUERY_SERVICE_SQL, q.tracingTableName, QUERY_SERVICE_TIME_UNIT, QUERY_SERVICE_TIME_VALUE)
-	var serviceList []string
-	rows, err := q.client.Query(ctx, sql)
-	if err != nil {
+func (q *ClickHouseQuery) GetService(ctx context.Context) ([]*v1_resource.Resource, error) {
+	sql := fmt.Sprintf(QUERY_SERVICE_SQL, q.tracingTableName, q.tracingTableName)
+
+	var result []ServiceModel
+	if err := q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
 	}
 
-	var result struct {
-		ServiceName string `ch:"ServiceName"`
-	}
-	for {
-		if !rows.Next() {
-			break
-		}
-		err = rows.ScanStruct(&result)
-		if err != nil {
-			return nil, err
-		}
-		serviceList = append(serviceList, result.ServiceName)
-	}
-
-	return serviceList, nil
+	return parseServiceResults(result), nil
 }
 
 func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
@@ -152,13 +145,13 @@ func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_tra
 		return nil, errors.New("traceID must not empty")
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s AS a WHERE a.TraceId='%s'", COLUMNS, q.tracingTableName, traceID)
+	sql := fmt.Sprintf("SELECT %s FROM %s AS a WHERE a.TraceId='%s'", TRACES_COLUMNS, q.tracingTableName, traceID)
 	var result []TracesModel
 	if err := q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
 	}
 
-	return convertSpan(result), nil
+	return parseSpanResults(result), nil
 }
 
 func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
@@ -172,7 +165,7 @@ func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.Trace
 		return nil, err
 	}
 
-	return convertSpan(result), nil
+	return parseSpanResults(result), nil
 }
 
 func (q *ClickHouseQuery) SearchLogs(ctx context.Context) (*v1_logs.LogsData, error) {
@@ -232,10 +225,20 @@ func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, 
 	}
 
 	subQuery := fmt.Sprintf(SUB_SQL, tableName, whereTimeCondition, limitCondition)
-	return fmt.Sprintf(BASE_SQL, COLUMNS, subQuery, tableName, whereKeywordCondition), nil
+	return fmt.Sprintf(BASE_SQL, TRACES_COLUMNS, subQuery, tableName, whereKeywordCondition), nil
 }
 
-func convertSpan(tracesModel []TracesModel) *v1_trace.TracesData {
+func parseServiceResults(models []ServiceModel) []*v1_resource.Resource {
+	services := make([]*v1_resource.Resource, len(models))
+	for i, item := range models {
+		services[i] = &v1_resource.Resource{
+			Attributes: convertAttributes(item.ResourceAttributes),
+		}
+	}
+	return services
+}
+
+func parseSpanResults(tracesModel []TracesModel) *v1_trace.TracesData {
 	rsMap := make(map[string]*v1_trace.ResourceSpans)
 	for _, item := range tracesModel {
 		s := v1_trace.Span{}

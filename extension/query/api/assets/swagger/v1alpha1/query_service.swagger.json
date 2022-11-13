@@ -86,7 +86,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1GetServicesResponse"
+              "$ref": "#/definitions/v1alpha1ResourcesData"
             }
           },
           "default": {
@@ -735,17 +735,17 @@
       },
       "description": "Response object to get operation names."
     },
-    "v1alpha1GetServicesResponse": {
+    "v1alpha1ResourcesData": {
       "type": "object",
       "properties": {
-        "services": {
+        "resources": {
           "type": "array",
           "items": {
-            "type": "string"
-          }
+            "$ref": "#/definitions/v1Resource"
+          },
+          "description": "An array of ResourceMetrics.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
         }
-      },
-      "description": "Response object to get service names."
+      }
     },
     "v1alpha1TraceQueryParameters": {
       "type": "object",

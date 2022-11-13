@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang/protobuf/ptypes/duration"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
+	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 	"time"
 )
@@ -13,7 +14,7 @@ type Query interface {
 	SearchTraces(ctx context.Context, query *TraceQueryParameters) (*v1_trace.TracesData, error)
 	SearchLogs(ctx context.Context) (*v1_logs.LogsData, error)
 	GetLog(ctx context.Context) (*v1_logs.LogsData, error)
-	GetService(ctx context.Context) ([]string, error)
+	GetService(ctx context.Context) ([]*v1_resource.Resource, error)
 	GetOperations(ctx context.Context, query *OperationsQueryParameters) ([]string, error)
 
 	//TODO: add metrics query.

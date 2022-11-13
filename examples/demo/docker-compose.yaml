@@ -8,6 +8,7 @@ services:
       - TZ=UTC
     ports:
       - '8123:8123'
+      - '9000:9000'
     volumes:
       - ./scripts/my_init_script.sh:/docker-entrypoint-initdb.d/my_init_script.sh
       - clickhouse_data:/bitnami/clickhouse
