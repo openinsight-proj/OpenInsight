@@ -3,35 +3,35 @@
 ## MetaData Filed
 
 ```sql
-ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-ResourceSchemaUrl String CODEC(ZSTD(1)),
-ScopeName String CODEC(ZSTD(1)),
-ScopeVersion String CODEC(ZSTD(1)),
-ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-ScopeDroppedAttributesCount UInt32 CODEC(ZSTD(1)),
-ScopeSchemaUrl String CODEC(ZSTD(1)),
-MetricName String CODEC(ZSTD(1)),
-MetricDescription String CODEC(ZSTD(1)),
-MetricUnit String CODEC(ZSTD(1)),
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttributesCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
 ```
 
 ## NumberDataPoint Filed
 
 ```sql
-Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-StartTime DateTime64(9) CODEC(Delta, ZSTD(1)),
-TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
-ValueAsDouble Float64 CODEC(ZSTD(1)),
-ValueAsInt UInt32 CODEC(ZSTD(1)),
-Flags UInt32  CODEC(ZSTD(1)),
-Exemplars Nested (
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    ValueAsDouble Float64 CODEC(ZSTD(1)),
+    ValueAsInt Int64 CODEC(ZSTD(1)),
+    Flags UInt32  CODEC(ZSTD(1)),
+    Exemplars Nested (
     filteredAttributes Map(LowCardinality(String), String),
     timeUnix DateTime64(9),
     valueAsDouble Float64,
-  	valueAsInt UInt32,
+    valueAsInt Int64,
     spanId String,
     traceId String
-) CODEC(ZSTD(1))
+    ) CODEC(ZSTD(1))
 ```
 
 ## HistogramDataPoint Filed
@@ -104,7 +104,7 @@ _flags UInt32  CODEC(ZSTD(1)),
 ### Gauge
 
 ```SQL
-CREATE TABLE IF NOT EXISTS %s (
+CREATE TABLE IF NOT EXISTS %s_gauge (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
@@ -116,67 +116,60 @@ CREATE TABLE IF NOT EXISTS %s (
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
     Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-    StartTime DateTime64(9) CODEC(Delta, ZSTD(1)),
+    StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
     TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
     ValueAsDouble Float64 CODEC(ZSTD(1)),
-    ValueAsInt UInt32 CODEC(ZSTD(1)),
+    ValueAsInt Int64 CODEC(ZSTD(1)),
     Flags UInt32  CODEC(ZSTD(1)),
     Exemplars Nested (
     filteredAttributes Map(LowCardinality(String), String),
     timeUnix DateTime64(9),
     valueAsDouble Float64,
-    valueAsInt UInt32,
+    valueAsInt Int64,
     spanId String,
-    traceId) String
+    traceId String
     ) CODEC(ZSTD(1))
-) ENGINE MergeTree()
-TTL toDateTime(TimeUnix) + toIntervalDay(%d)
-PARTITION BY toDate(TimeUnix)
-ORDER BY (toUnixTimestamp64Nano(TimeUnix))
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+    ) ENGINE MergeTree()
+    %s
+    PARTITION BY toDate(TimeUnix)
+    ORDER BY (toUnixTimestamp64Nano(TimeUnix))
+    SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 ```
 
 ### Sum
-
-#### Filed
-
 ```sql
-ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-Resource_schema_url String CODEC(ZSTD(1)),
-
-Scope_Name String CODEC(ZSTD(1)),
-Scope_Version String CODEC(ZSTD(1)),
-Scope_Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-Scope_Dropped_Attributes_Count UInt32 CODEC(ZSTD(1)),
-Scope_schema_url String CODEC(ZSTD(1)),
-
-metric_name String CODEC(ZSTD(1)),
-metric_description String CODEC(ZSTD(1)),
-metric_unit String CODEC(ZSTD(1)),
-
-sum_attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-sum_start_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-sum_time_unix_nano DateTime64(9) CODEC(Delta, ZSTD(1)),
-sum_value_as_double Float64 CODEC(ZSTD(1),
-sum_value_as_int UInt32 CODEC(ZSTD(1)),
-sum_flags UInt32  CODEC(ZSTD(1)),
-sum_exemplars Nested (
-    filtered_attributes Map(LowCardinality(String), String),
-    time_unix_nano DateTime64(9),
-    value_as_double Float64,
-  	value_as_int UInt32,
-    span_id String,
-    trace_id String
-)
-
-sum_aggregation_temporality String CODEC(ZSTD(1)),
-sum_is_monotonic Boolean CODEC(Delta, ZSTD(1)),
-```
-
-#### Table Creation SQL
-
-```
-TUDO ...
+CREATE TABLE IF NOT EXISTS %s_sum (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttributesCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	ValueAsDouble Float64 CODEC(ZSTD(1)),
+	ValueAsInt UInt32 CODEC(ZSTD(1)),
+	Flags UInt32  CODEC(ZSTD(1)),
+    Exemplars Nested (
+		FilteredAttributes Map(LowCardinality(String), String),
+		TimeUnix DateTime64(9),
+		ValueAsDouble Float64,
+		ValueAsInt Int64,
+		SpanId String,
+		TraceId String
+    ) CODEC(ZSTD(1)),
+    AggTemp Int32 CODEC(ZSTD(1)),
+	IsMonotonic Boolean CODEC(Delta, ZSTD(1))
+) ENGINE MergeTree()
+%s
+PARTITION BY toDate(TimeUnix)
+ORDER BY (toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 ```
 
 ### Histogram
