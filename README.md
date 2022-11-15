@@ -30,6 +30,8 @@
 
 With OpenInsight, you can choose different storage databases for different data (Metrics, Tracing, Logging), or you can choose a unified storage database for storage and analysis.
 
+**Our aim is to extend and not to replace the OpenTelemetry Collector.**
+
 # Scenarios
 ## 1. Clickhouse
 You only choose Clickhouse for Logging & Tracing & Metrics(In the Future) store.
