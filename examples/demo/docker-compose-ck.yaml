@@ -1,0 +1,18 @@
+version: "2"
+services:
+  clickhouse:
+    image: docker.io/bitnami/clickhouse:22.9
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - CLICKHOUSE_ADMIN_PASSWORD=changeme
+      - TZ=UTC
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    volumes:
+      - ./scripts/my_init_script.sh:/docker-entrypoint-initdb.d/my_init_script.sh
+      - clickhouse_data:/bitnami/clickhouse
+
+volumes:
+  clickhouse_data:
+    driver: local

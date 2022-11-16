@@ -14,9 +14,15 @@ var (
 	_ io.Closer = (*Factory)(nil)
 )
 
+const (
+	LoggingTableName = "otel_logs"
+	TracingTableName = "otel_traces"
+	MetricsTableName = "otel_metrics"
+)
+
 type ClickhouseType struct {
 	Dsn              string                     `mapstructure:"dsn"`
-	TlsClientSetting configtls.TLSClientSetting `mapstructure:"tls_setting"`
+	TlsClientSetting configtls.TLSClientSetting `mapstructure:"tls"`
 	LoggingTableName string                     `mapstructure:"logging_table_name"`
 	TracingTableName string                     `mapstructure:"tracing_table_name"`
 	MetricsTableName string                     `mapstructure:"metrics_table_name"`
@@ -35,6 +41,8 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	f.cfg = f.CreatDefaultConfig(f.cfg)
 
 	if f.cfg.TlsClientSetting.ServerName == "" {
 		f.cfg.TlsClientSetting.ServerName = "<missing service name>"
@@ -56,6 +64,21 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 	f.client = conn
 	f.logger = logger
 	return nil
+}
+
+func (f *Factory) CreatDefaultConfig(cfg *ClickhouseType) *ClickhouseType {
+	if cfg.LoggingTableName == "" {
+		cfg.LoggingTableName = LoggingTableName
+	}
+
+	if cfg.TracingTableName == "" {
+		cfg.TracingTableName = TracingTableName
+	}
+
+	if cfg.MetricsTableName == "" {
+		cfg.MetricsTableName = MetricsTableName
+	}
+	return cfg
 }
 
 func (f *Factory) CreateSpanQuery() (storage.Query, error) {

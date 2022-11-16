@@ -32,7 +32,7 @@ type ElasticsearchQuery struct {
 	MetricsIndex string
 }
 
-func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
+func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]*v1_resource.Resource, error) {
 
 	// boolean search query
 	query := esquery.Search()
@@ -45,7 +45,7 @@ func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	var services []string
+	var services []*v1_resource.Resource
 	for _, agg := range res.Aggregations {
 		rMaps, err := DecodeSearchResult(*agg)
 		if err != nil {
@@ -58,7 +58,14 @@ func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
 				for _, value := range values {
 					nameV := value.(map[string]interface{})
 					name := nameV["key"]
-					services = append(services, name.(string))
+					services = append(services, &v1_resource.Resource{
+						Attributes: []*v1_common.KeyValue{
+							{
+								Key:   "service.name",
+								Value: &v1_common.AnyValue{Value: &v1_common.AnyValue_StringValue{StringValue: name.(string)}},
+							},
+						},
+					})
 				}
 			}
 		}
@@ -70,6 +77,9 @@ func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]string, error) {
 func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
 
 	qsl, err := buildTraceQuery(query)
+	if err != nil {
+		return nil, err
+	}
 	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
 	if err != nil {
 		return nil, err
@@ -178,9 +188,9 @@ func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchReque
 		}
 	}
 
-	if params.DurationMin != nil {
-		//TODO: do not support duration filters.
-	}
+	//TODO: do not support duration filters.
+	//if params.DurationMin != nil {
+	//}
 
 	q.Query(boolQ)
 	if params.NumTraces > 0 {
