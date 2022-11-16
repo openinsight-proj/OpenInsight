@@ -69,11 +69,3 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 
 	require.NoError(t, exporter.Shutdown(context.TODO()))
 }
-
-func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := componenttest.NewNopExporterCreateSettings()
-	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a traces exporter")
-}

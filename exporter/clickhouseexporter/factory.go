@@ -47,9 +47,9 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		MetricsTableName: "otel_metrics",
+		LogsTableName:    "openinsight_logs",
+		TracesTableName:  "openinsight_traces",
+		MetricsTableName: "openinsight_metrics",
 		TTLDays:          7,
 	}
 }
