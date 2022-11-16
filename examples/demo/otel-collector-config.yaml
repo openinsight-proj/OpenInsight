@@ -18,6 +18,7 @@ exporters:
     dsn: tcp://default:changeme@clickhouse:9000/openinsight
     logs_table_name: openinsight_logs
     traces_table_name: openinsight_traces
+    metrics_table_name: openinsight_metrics
     ttl_days: 3
     timeout: 10s
     sending_queue:
