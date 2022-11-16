@@ -66,8 +66,11 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 					case pmetric.MetricTypeSum:
 						metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), r.Name(), r.Description(), r.Unit())
 					case pmetric.MetricTypeHistogram:
+						metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), r.Name(), r.Description(), r.Unit())
 					case pmetric.MetricTypeExponentialHistogram:
+						metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), r.Name(), r.Description(), r.Unit())
 					case pmetric.MetricTypeSummary:
+						metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), r.Name(), r.Description(), r.Unit())
 					default:
 						e.logger.Error("unsupported metrics type")
 					}
@@ -76,6 +79,7 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			}
 		}
 
+		// batch https://clickhouse.com/docs/zh/introduction/performance/
 		if err := internal.InsertMetrics(ctx, tx, metricsMap, e.logger); err != nil {
 			//todo retry
 			return fmt.Errorf("ExecContext:%w", err)

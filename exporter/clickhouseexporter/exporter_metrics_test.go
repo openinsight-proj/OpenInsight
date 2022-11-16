@@ -40,6 +40,53 @@ func simpleMetrics(count int) pmetric.Metrics {
 		exemplars.SetIntValue(54)
 		exemplars.FilteredAttributes().PutStr("key", "value")
 		exemplars.FilteredAttributes().PutStr("key2", "value2")
+
+		// histogram
+		m = sm.Metrics().AppendEmpty()
+		dpHisto := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+		dpHisto.SetCount(1)
+		dpHisto.SetSum(1)
+		dpHisto.Attributes().PutStr("key", "value")
+		dpHisto.Attributes().PutStr("key", "value")
+		dpHisto.ExplicitBounds().FromRaw([]float64{0, 0, 0, 0, 0})
+		dpHisto.BucketCounts().FromRaw([]uint64{0, 0, 0, 1, 0})
+		dpHisto.SetMin(0)
+		dpHisto.SetMax(1)
+		exemplars = dpHisto.Exemplars().AppendEmpty()
+		exemplars.SetIntValue(54)
+		exemplars.FilteredAttributes().PutStr("key", "value")
+		exemplars.FilteredAttributes().PutStr("key2", "value2")
+
+		// exp histogram
+		m = sm.Metrics().AppendEmpty()
+		dpExpHisto := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+		dpExpHisto.SetSum(1)
+		dpExpHisto.SetMin(0)
+		dpExpHisto.SetMax(1)
+		dpExpHisto.SetZeroCount(0)
+		dpExpHisto.SetCount(1)
+		dpExpHisto.Attributes().PutStr("key", "value")
+		dpExpHisto.Attributes().PutStr("key", "value")
+		dpExpHisto.Negative().SetOffset(1)
+		dpExpHisto.Negative().BucketCounts().FromRaw([]uint64{0, 0, 0, 1, 0})
+		dpExpHisto.Positive().SetOffset(1)
+		dpExpHisto.Positive().BucketCounts().FromRaw([]uint64{0, 0, 0, 1, 0})
+
+		exemplars = dpHisto.Exemplars().AppendEmpty()
+		exemplars.SetIntValue(54)
+		exemplars.FilteredAttributes().PutStr("key", "value")
+		exemplars.FilteredAttributes().PutStr("key2", "value2")
+
+		// summary
+		m = sm.Metrics().AppendEmpty()
+		summary := m.SetEmptySummary().DataPoints().AppendEmpty()
+		summary.Attributes().PutStr("key", "value")
+		summary.Attributes().PutStr("key2", "value2")
+		summary.SetCount(1)
+		summary.SetSum(1)
+		quantileValues := summary.QuantileValues().AppendEmpty()
+		quantileValues.SetValue(1)
+		quantileValues.SetQuantile(1)
 	}
 	return metrics
 }
@@ -70,15 +117,17 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		exporter := newTestMetricsExporter(t, defaultDSN)
 		mustPushMetricsData(t, exporter, simpleMetrics(2))
 
-		require.Equal(t, 2, items)
+		require.Equal(t, 5, items)
 	})
 }
 
+// local dev test
 func Test_newMetricsExporter(t *testing.T) {
 	exporter := newTestMetricsExporter(t, defaultDSN)
-	mustPushMetricsData(t, exporter, simpleMetrics(1))
+	mustPushMetricsData(t, exporter, simpleMetrics(2))
 }
 
+// still in process
 func Test_tran(t *testing.T) {
 	exporter := newTestMetricsExporter(t, defaultDSN)
 	db := exporter.client
