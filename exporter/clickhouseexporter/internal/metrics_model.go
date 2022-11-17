@@ -421,15 +421,13 @@ func attributesToMap(attributes pcommon.Map) map[string]string {
 
 func convertSliceToArraySet(slice interface{}) clickhouse.ArraySet {
 	var set clickhouse.ArraySet
-	switch slice.(type) {
+	switch slice := slice.(type) {
 	case []uint64:
-		s, _ := slice.([]uint64)
-		for _, item := range s {
+		for _, item := range slice {
 			set = append(set, item)
 		}
 	case []float64:
-		s, _ := slice.([]float64)
-		for _, item := range s {
+		for _, item := range slice {
 			set = append(set, item)
 		}
 	}
