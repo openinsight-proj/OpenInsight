@@ -34,7 +34,7 @@ With OpenInsight, you can choose different storage databases for different data 
 
 # Scenarios
 ## 1. Clickhouse
-You only choose Clickhouse for Logging & Tracing & Metrics(In the Future) store.
+You only choose Clickhouse for Logging & Tracing & Metrics store.
 
 With OpenInsight configuration:
 ```yaml
@@ -46,12 +46,12 @@ extensions:
         endpoint: 0.0.0.0:8080
     storage:
       clickhouse:
-        dsn: tcp://127.0.0.1:9000/default
+        dsn: tcp://127.0.0.1:9000/openinsight
         tls_setting:
           insecure: true
-        tracing_table_name: otel_traces
-        logging_table_name: otel_logs
-        metrics_table_name: otel_metrics
+        tracing_table_name: openinsight_traces
+        logging_table_name: openinsight_logs
+        metrics_table_name: openinsight_metrics
     tracing_query:
       storage_type: clickhouse
     logging_query:
@@ -151,9 +151,7 @@ extensions:
         user: elastic
         password: dangerous
       clickhouse:
-        dsn: tcp://127.0.0.1:9000?database=default
-        ttl_days: 3
-        timeout: 5s
+        dsn: tcp://127.0.0.1:9000/openinsight
       prometheus:
         endpoint: "http://localhost:9090"
     tracing_query:
