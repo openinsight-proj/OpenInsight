@@ -49,8 +49,9 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "full")),
 		DSN:              defaultDSN,
 		TTLDays:          3,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
+		LogsTableName:    "openinsight_logs",
+		TracesTableName:  "openinsight_traces",
+		MetricsTableName: "openinsight_metrics",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 5 * time.Second,
 		},
@@ -75,5 +76,5 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 }
 
 const (
-	defaultDSN = "tcp://127.0.0.1:9000/otel"
+	defaultDSN = "tcp://127.0.0.1:9000/openinsight"
 )

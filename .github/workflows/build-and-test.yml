@@ -36,10 +36,10 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        #if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        #if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
   lint-matrix:
     strategy:
@@ -65,10 +65,10 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        #if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        #if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Lint Build
         uses: actions/cache@v3
@@ -98,13 +98,10 @@ jobs:
       matrix:
         go-version: [1.19, 1.18]
         group:
-          - receiver-0
-          - receiver-1
           - processor
           - exporter
           - extension
           - internal
-          - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
@@ -123,10 +120,10 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        #if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
+        #if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Test Build
         uses: actions/cache@v3
