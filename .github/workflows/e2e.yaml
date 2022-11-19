@@ -21,10 +21,39 @@ on:
     branches: [ "main" ]
 
 jobs:
+  build-openinsight:
+    if: github.repository == 'openinsight-proj/openinsight'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    timeout-minutes: 90
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - name: Login to GitHub Package Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.ACTIONS_TOKEN }}
+      - name: Set up opentelemetry collector builder
+        run: GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
+      - name: Build otelcol
+        env:
+          TAG: ${{ github.sha }}
+        run: make build-openinsight
+      - name: Build otelcol e2e docker
+        run: make build-openinsight-docker
   e2e-test:
-    if: |
-      always() &&
-      ((github.event_name == 'schedule' && github.repository == 'openinsight-proj/openinsight') || needs.changes.outputs.oap == 'true')
+    if: github.repository == 'openinsight-proj/openinsight'
     name: E2E test
     needs: [docker]
     runs-on: ubuntu-latest
@@ -33,10 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         test:
-          - name: Storage Clickhouse[Traces,Logs,Metrics]
+          - name: Storage Clickhouse [Traces,Logs,Metrics]
             config: test/e2e/cases/storage/clickhouse/e2e.yaml
-
-
 
     steps:
       - uses: actions/checkout@v3

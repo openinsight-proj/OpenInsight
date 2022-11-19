@@ -2,7 +2,7 @@ version: '2.1'
 
 services:
   openinsight:
-    image: ghcr.m.daocloud.io/openinsight-proj/openinsight
+    image: ghcr.io/openinsight-proj/openinsight:dev
     command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
     restart: always
     ports:
