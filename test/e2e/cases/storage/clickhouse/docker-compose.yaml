@@ -1,0 +1,83 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: '2.1'
+services:
+  clickhouse:
+    image: docker.io/bitnami/clickhouse:22.9
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - CLICKHOUSE_ADMIN_PASSWORD=changeme
+      - TZ=UTC
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    volumes:
+      - ./scripts/my_init_script.sh:/docker-entrypoint-initdb.d/my_init_script.sh
+      - clickhouse_data:/bitnami/clickhouse
+
+  openinsight:
+    extends:
+      file: ../../../script/docker-compose/base-compose.yml
+      service: openinsight
+    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    restart: always
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "18888:18888" # query extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "55679:55679" # zpages extension
+    depends_on:
+      - clickhouse
+
+  server:
+    extends:
+      file: ../../../script/docker-compose/base-compose.yml
+      service: demo-server
+    depends_on:
+      openinsight:
+        condition: service_healthy
+    networks:
+      - e2e
+
+  client:
+    extends:
+      file: ../../../script/docker-compose/base-compose.yml
+      service: demo-client
+    depends_on:
+      openinsight:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+networks:
+  e2e:
+
+volumes:
+  clickhouse_data:
+    driver: local

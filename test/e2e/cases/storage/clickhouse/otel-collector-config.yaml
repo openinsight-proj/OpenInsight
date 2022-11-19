@@ -1,0 +1,71 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      label1: value1
+  logging:
+  clickhouse:
+    dsn: tcp://default:changeme@clickhouse:9000/openinsight
+    logs_table_name: openinsight_logs
+    traces_table_name: openinsight_traces
+    metrics_table_name: openinsight_metrics
+    ttl_days: 3
+    timeout: 10s
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+processors:
+  batch:
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:18888
+      grpc:
+        endpoint: 0.0.0.0:18889
+    storage:
+      clickhouse:
+        dsn: tcp://default:changeme@clickhouse:9000/openinsight
+        logging_table_name: openinsight_logs
+        tracing_table_name: openinsight_traces
+        metrics_table_name: openinsight_metrics
+        tls:
+          insecure: true
+    tracing_query:
+      storage_type: clickhouse
+    logging_query:
+      storage_type: clickhouse
+    metrics_query:
+      storage_type: clickhouse
+
+service:
+  extensions: [pprof, zpages, query, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, clickhouse]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, clickhouse]
