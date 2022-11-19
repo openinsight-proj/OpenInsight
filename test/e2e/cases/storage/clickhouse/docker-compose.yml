@@ -27,6 +27,11 @@ services:
     volumes:
       - ./scripts/my_init_script.sh:/docker-entrypoint-initdb.d/my_init_script.sh
       - clickhouse_data:/bitnami/clickhouse
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/9000"]
+      interval: 5s
+      timeout: 60s
+      retries: 120
     networks:
       - e2e
 
@@ -39,9 +44,10 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     depends_on:
-      - clickhouse
+      clickhouse:
+        condition: service_healthy
     ports:
-      - 18888
+      - "18888:18888"
     networks:
       - e2e
 
