@@ -94,6 +94,6 @@ jobs:
       - name: Load docker images
         run: find docker-images -name "*.tar" -exec docker load -i {} \;
       - name: ${{ matrix.test.name }}
-        uses: apache/skywalking-infra-e2e@964ede199fe199e166920169dc5f8c9b214cfac5
+        uses: apache/skywalking-infra-e2e@v1.2.0
         with:
           e2e-file: $GITHUB_WORKSPACE/${{ matrix.test.config }}

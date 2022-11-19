@@ -27,6 +27,8 @@ services:
     volumes:
       - ./scripts/my_init_script.sh:/docker-entrypoint-initdb.d/my_init_script.sh
       - clickhouse_data:/bitnami/clickhouse
+    networks:
+      - e2e
 
   openinsight:
     extends:
@@ -46,34 +48,36 @@ services:
       - "55679:55679" # zpages extension
     depends_on:
       - clickhouse
-
-  server:
-    extends:
-      file: ../../../script/docker-compose/base-compose.yml
-      service: demo-server
-    depends_on:
-      openinsight:
-        condition: service_healthy
     networks:
       - e2e
 
-  client:
+  demo-server:
+    extends:
+      file: ../../../script/docker-compose/base-compose.yml
+      service: demo-server
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=openinsight:4317
+    networks:
+      - e2e
+
+  demo-client:
     extends:
       file: ../../../script/docker-compose/base-compose.yml
       service: demo-client
-    depends_on:
-      openinsight:
-        condition: service_healthy
-      server:
-        condition: service_healthy
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=openinsight:4317
+      - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
+    networks:
+      - e2e
 
   prometheus:
-    container_name: prometheus
     image: prom/prometheus:latest
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    networks:
+      - e2e
 
 networks:
   e2e:

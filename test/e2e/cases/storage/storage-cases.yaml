@@ -17,4 +17,4 @@ cases:
   # service list
   - query: |
       curl --location --request GET 'http://${openinsight_host}:${openinsight_18888}/apis/traces/v1alpha1/services'
-    expected: expected/service.yml
+    expected: expected/service.yaml
