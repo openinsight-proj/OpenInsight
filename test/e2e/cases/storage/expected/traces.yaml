@@ -13,10 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cases:
-  # service list
-  - query: curl -XGET 'http://${openinsight_host}:${openinsight_18888}/apis/traces/v1alpha1/services'
-    expected: expected/service.yaml
-  # traces list
-  - query: curl -XGET 'http://${openinsight_host}:${openinsight_18888}/apis/traces/v1alpha1/trace'
-    expected: expected/traces.yaml
+resourceSpans:
+  {{- contains .resourceSpans }}
+  - scopeSpans:
+    {{- contains .scopeSpans }}
+    - spans:
+        - traceId: {{ notEmpty .traceId }}
+          spanId: {{ notEmpty .spanId }}
+          name: "ExecuteRequest"
+    {{- end }}
+    {{- contains .scopeSpans }}
+    - attributes:
+        - key: "service.name"
+          value:
+            stringValue: "demo-client"
+    {{- end }}
+  {{- end }}
