@@ -14,15 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: E2E Test
+name: E2E-Test
 
 on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
-    branches: [ "main" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY_SERVER_ADDRESS: ghcr.io/openinsight-proj
+  REGISTRY_USER_NAME: ${{ github.repository_owner }}
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_TOKEN }}
 
 jobs:
   build-openinsight:
@@ -58,7 +67,7 @@ jobs:
   e2e-test:
     if: github.repository == 'openinsight-proj/openinsight'
     name: E2E test
-    needs: [docker]
+    needs: [build-openinsight]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -67,18 +76,10 @@ jobs:
         test:
           - name: Storage Clickhouse [Traces,Logs,Metrics]
             config: test/e2e/cases/storage/clickhouse/e2e.yaml
-
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: actions/download-artifact@v3
-        name: Download docker images
-        with:
-          name: docker-images-8
-          path: docker-images
-      - name: Load docker images
-        run: find docker-images -name "*.tar" -exec docker load -i {} \;
       - name: ${{ matrix.test.name }}
         uses: apache/skywalking-infra-e2e@964ede199fe199e166920169dc5f8c9b214cfac5
         with:
