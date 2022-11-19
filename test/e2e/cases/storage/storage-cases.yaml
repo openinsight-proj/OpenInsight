@@ -15,9 +15,9 @@
 
 cases:
   # service list
-  # TODO: fix 18888 hard code.
-  - query: curl -XGET 'http://${openinsight_host}:18888/apis/traces/v1alpha1/services'
+  # TODO: fix localhost:18888 hard code.
+  - query: curl -XGET 'http://localhost:18888/apis/traces/v1alpha1/services'
     expected: expected/service.yaml
   # traces list
-  - query: curl -XGET 'http://${openinsight_host}:18888/apis/traces/v1alpha1/trace'
+  - query: curl -XGET 'http://localhost:18888/apis/traces/v1alpha1/trace'
     expected: expected/traces.yaml
