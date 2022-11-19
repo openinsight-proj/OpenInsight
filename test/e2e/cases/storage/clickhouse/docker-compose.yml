@@ -40,6 +40,8 @@ services:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     depends_on:
       - clickhouse
+    ports:
+      - 18888
     networks:
       - e2e
 

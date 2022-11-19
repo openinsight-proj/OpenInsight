@@ -5,8 +5,8 @@ services:
     image: ghcr.io/openinsight-proj/openinsight:dev
     command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
     restart: always
-    ports:
-      - "18888:18888" # query extension
+    expose:
+      - 18888
 
   demo-client:
     build:
