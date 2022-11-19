@@ -81,7 +81,7 @@ func (e *ExpHistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *za
 	duration := time.Since(start)
 
 	//TODO latency metrics
-	logger.Info("insert exponential histogram metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert exponential histogram metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }

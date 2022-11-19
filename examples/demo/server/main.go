@@ -137,6 +137,10 @@ func main() {
 		instrument.WithDescription("The number of requests received"),
 	)
 
+	upDownCounter, _ := meter.SyncInt64().UpDownCounter("demo_server/random_up_down_counter",
+		instrument.WithDescription("The random up down counter"),
+	)
+
 	// create a handler wrapped in OpenTelemetry instrumentation
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		//  random sleep to simulate latency
@@ -153,10 +157,12 @@ func main() {
 			sleep = rng.Int63n(87)
 		case 4:
 			sleep = rng.Int63n(1173)
+
 		}
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		ctx := req.Context()
 		requestCount.Add(ctx, 1, commonLabels...)
+		upDownCounter.Add(ctx, time.Now().Unix()%5)
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 

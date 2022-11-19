@@ -69,7 +69,7 @@ func (s *SummaryMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Log
 	duration := time.Since(start)
 
 	//TODO latency metrics
-	logger.Info("insert summary metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert summary metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }
