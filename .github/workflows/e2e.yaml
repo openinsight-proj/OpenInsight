@@ -94,6 +94,12 @@ jobs:
       - name: Load docker images
         run: find docker-images -name "*.tar" -exec docker load -i {} \;
       - name: ${{ matrix.test.name }}
-        uses: apache/skywalking-infra-e2e@v1.2.0
+        uses: apache/skywalking-infra-e2e@964ede199fe199e166920169dc5f8c9b214cfac5
         with:
           e2e-file: $GITHUB_WORKSPACE/${{ matrix.test.config }}
+      - uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: logs
+          path: "${{ env.SW_INFRA_E2E_LOG_DIR }}"
