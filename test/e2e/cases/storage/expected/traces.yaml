@@ -14,4 +14,18 @@
 # limitations under the License.
 
 resourceSpans:
-  {{ notEmpty .resourceSpans }}
+  {{- contains .resourceSpans }}
+  - scopeSpans:
+    {{- contains .scopeSpans }}
+    - spans:
+        - traceId: {{ notEmpty .traceId }}
+          spanId: {{ notEmpty .spanId }}
+          name: "ExecuteRequest"
+    {{- end }}
+    {{- contains .scopeSpans }}
+    - attributes:
+        - key: "service.name"
+          value:
+            stringValue: "demo-client"
+    {{- end }}
+  {{- end }}

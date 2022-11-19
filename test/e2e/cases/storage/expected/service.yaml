@@ -15,4 +15,11 @@
 
 
 resources:
-  {{ notEmpty .resources }}
+  {{- contains .resources }}
+  - attributes:
+    {{- contains .attributes }}
+    - key: "service.name"
+      value:
+        stringValue: "demo-client"
+    {{- end }}
+  {{- end }}
