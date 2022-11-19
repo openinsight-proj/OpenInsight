@@ -63,6 +63,13 @@ jobs:
         env:
           TAG: ${{ github.sha }}
         run: make build-openinsight-docker
+      - name: Save docker images
+        run: docker save -o openinsight-e2e.tar ghcr.io/openinsight-proj/openinsight:dev
+      - name: Upload docker images
+        uses: actions/upload-artifact@v3
+        with:
+          name: openinsight-e2e-docker-images
+          path: openinsight-e2e.tar
 
   e2e-test:
     if: github.repository == 'openinsight-proj/openinsight'
@@ -79,6 +86,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
+      - uses: actions/download-artifact@v3
+        name: Download openinsight-e2e docker images
+        with:
+          name: openinsight-e2e-docker-images
+          path: docker-images
+      - name: Load docker images
+        run: find docker-images -name "*.tar" -exec docker load -i {} \;
       - name: ${{ matrix.test.name }}
         uses: apache/skywalking-infra-e2e@964ede199fe199e166920169dc5f8c9b214cfac5
         with:
