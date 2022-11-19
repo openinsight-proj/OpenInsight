@@ -38,8 +38,6 @@ services:
     restart: always
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "18888:18888" # query extension
     depends_on:
       - clickhouse
     networks:
