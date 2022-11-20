@@ -19,5 +19,5 @@ cases:
   - query: curl -XGET 'http://localhost:18888/apis/traces/v1alpha1/services'
     expected: expected/service.yaml
   # traces list
-  - query: curl -XGET 'http://localhost:18888/apis/traces/v1alpha1/trace'
-    expected: expected/traces.yaml
+  #- query: curl -XGET 'http://localhost:18888/apis/traces/v1alpha1/trace'
+  #  expected: expected/traces.yaml

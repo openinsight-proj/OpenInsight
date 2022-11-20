@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 resources:
-  {{- contains .resources }}
+{{ contains .resources }}
   - attributes:
-    {{- contains .attributes }}
-    - key: "service.name"
+  {{- contains .attributes }}
+    - key: {{ notEmpty .key }}
       value:
-        stringValue: "demo-client"
-    {{- end }}
+        stringValue: {{ notEmpty .value.stringValue }}
   {{- end }}
+    droppedAttributesCount: 0
+{{ end }}
