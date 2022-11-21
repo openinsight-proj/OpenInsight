@@ -73,7 +73,7 @@ func (g *GaugeMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Logge
 	duration := time.Since(start)
 
 	//TODO latency metrics
-	logger.Info("insert gauge metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert gauge metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }

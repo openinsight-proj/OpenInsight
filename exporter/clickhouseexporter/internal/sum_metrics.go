@@ -72,7 +72,7 @@ func (s *SumMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger)
 		return fmt.Errorf("insert sum metrics fail:%w", err)
 	}
 	duration := time.Since(start)
-	logger.Info("insert sum metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert sum metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }

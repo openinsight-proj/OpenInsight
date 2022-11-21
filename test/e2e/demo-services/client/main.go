@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Sample contains a simple http server that exports to the OpenTelemetry agent.
-
+// Sample contains a simple client that periodically makes a simple http request
+// to a server and exports to the OpenTelemetry service.
 package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -41,11 +42,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 )
-
-var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // Initializes an OTLP exporter, and configures the corresponding trace and
 // metric providers.
@@ -80,7 +78,9 @@ func initProvider() func() {
 		otlptracegrpc.WithInsecure(),
 		otlptracegrpc.WithEndpoint(otelAgentAddr),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	traceExp, err := otlptrace.New(ctx, traceClient)
+	sctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	traceExp, err := otlptrace.New(sctx, traceClient)
 	handleErr(err, "Failed to create the collector trace exporter")
 
 	res, err := resource.New(ctx,
@@ -90,7 +90,9 @@ func initProvider() func() {
 		resource.WithHost(),
 		resource.WithAttributes(
 			// the service name used to display traces in backends
-			semconv.ServiceNameKey.String("demo-server"),
+			semconv.ServiceNameKey.String("demo-client"),
+			semconv.ProcessCommandArgsKey.String("demo-client"),
+			semconv.ProcessPIDKey.String("demo-client"),
 		),
 	)
 	handleErr(err, "failed to create resource")
@@ -129,64 +131,90 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
-	meter := global.Meter("demo-server-meter")
-	serverAttribute := attribute.String("server-attribute", "foo")
-	commonLabels := []attribute.KeyValue{serverAttribute}
+	tracer := otel.Tracer("demo-client-tracer")
+	meter := global.Meter("demo-client-meter")
+
+	method, _ := baggage.NewMember("method", "repl")
+	client, _ := baggage.NewMember("client", "cli")
+	bag, _ := baggage.New(method, client)
+
+	// labels represent additional key-value descriptors that can be bound to a
+	// metric observer or recorder.
+	// TODO: Use baggage when supported to extract labels from baggage.
+	commonLabels := []attribute.KeyValue{
+		attribute.String("method", "repl"),
+		attribute.String("client", "cli"),
+	}
+
+	// Recorder metric example
+	requestLatency, _ := meter.SyncFloat64().Histogram(
+		"demo_client/request_latency",
+		instrument.WithDescription("The latency of requests processed"),
+	)
+
+	// TODO: Use a view to just count number of measurements for requestLatency when available.
 	requestCount, _ := meter.SyncInt64().Counter(
-		"demo_server/request_counts",
-		instrument.WithDescription("The number of requests received"),
+		"demo_client/request_counts",
+		instrument.WithDescription("The number of requests processed"),
 	)
 
-	upDownCounter, _ := meter.SyncInt64().UpDownCounter("demo_server/random_up_down_counter",
-		instrument.WithDescription("The random up down counter"),
+	lineLengths, _ := meter.SyncInt64().Histogram(
+		"demo_client/line_lengths",
+		instrument.WithDescription("The lengths of the various lines in"),
 	)
 
-	// create a handler wrapped in OpenTelemetry instrumentation
-	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		//  random sleep to simulate latency
-		var sleep int64
+	// TODO: Use a view to just count number of measurements for lineLengths when available.
+	lineCounts, _ := meter.SyncInt64().Counter(
+		"demo_client/line_counts",
+		instrument.WithDescription("The counts of the lines in"),
+	)
 
-		switch modulus := time.Now().Unix() % 5; modulus {
-		case 0:
-			sleep = rng.Int63n(2000)
-		case 1:
-			sleep = rng.Int63n(15)
-		case 2:
-			sleep = rng.Int63n(917)
-		case 3:
-			sleep = rng.Int63n(87)
-		case 4:
-			sleep = rng.Int63n(1173)
-
+	defaultCtx := baggage.ContextWithBaggage(context.Background(), bag)
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for {
+		startTime := time.Now()
+		ctx, span := tracer.Start(defaultCtx, "ExecuteRequest")
+		makeRequest(ctx)
+		span.End()
+		latencyMs := float64(time.Since(startTime)) / 1e6
+		nr := int(rng.Int31n(7))
+		for i := 0; i < nr; i++ {
+			randLineLength := rng.Int63n(999)
+			lineCounts.Add(ctx, 1, commonLabels...)
+			lineLengths.Record(ctx, randLineLength, commonLabels...)
+			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
 		}
-		time.Sleep(time.Duration(sleep) * time.Millisecond)
-		ctx := req.Context()
+
+		requestLatency.Record(ctx, latencyMs, commonLabels...)
 		requestCount.Add(ctx, 1, commonLabels...)
-		upDownCounter.Add(ctx, time.Now().Unix()%5)
-		span := trace.SpanFromContext(ctx)
-		bag := baggage.FromContext(ctx)
 
-		var baggageAttributes []attribute.KeyValue
-		baggageAttributes = append(baggageAttributes, serverAttribute)
-		for _, member := range bag.Members() {
-			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
-		}
-		span.SetAttributes(baggageAttributes...)
-
-		if _, err := w.Write([]byte("Hello World")); err != nil {
-			http.Error(w, "write operation failed.", http.StatusInternalServerError)
-			return
-		}
-
-	})
-
-	mux := http.NewServeMux()
-	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
-	server := &http.Server{
-		Addr:    ":7080",
-		Handler: mux,
+		fmt.Printf("Latency: %.3fms\n", latencyMs)
+		time.Sleep(time.Duration(1) * time.Second)
 	}
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		handleErr(err, "server failed to serve")
+}
+
+func makeRequest(ctx context.Context) {
+
+	demoServerAddr, ok := os.LookupEnv("DEMO_SERVER_ENDPOINT")
+	if !ok {
+		demoServerAddr = "http://0.0.0.0:7080/hello"
 	}
+
+	// Trace an HTTP client by wrapping the transport
+	client := http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+
+	// Make sure we pass the context to the request to avoid broken traces.
+	req, err := http.NewRequestWithContext(ctx, "GET", demoServerAddr, nil)
+	if err != nil {
+		handleErr(err, "failed to http request")
+	}
+
+	// All requests made with this client will create spans.
+	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	res.Body.Close()
 }

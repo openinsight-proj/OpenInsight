@@ -14,11 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: check-packages
+name: E2E
 
 on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
-    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -52,7 +59,47 @@ jobs:
           password: ${{ secrets.ACTIONS_TOKEN }}
       - name: Set up opentelemetry collector builder
         run: GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.62.1
-      - name: Build otelcol
+      - name: Build openinsight e2e docker
         env:
           TAG: ${{ github.sha }}
-        run: make build-openinsight
+        run: make build-openinsight-docker
+      - name: Save docker images
+        run: docker save -o openinsight-e2e.tar ghcr.io/openinsight-proj/openinsight:dev
+      - name: Upload docker images
+        uses: actions/upload-artifact@v3
+        with:
+          name: openinsight-e2e-docker-images
+          path: openinsight-e2e.tar
+
+  e2e-test:
+    if: github.repository == 'openinsight-proj/openinsight'
+    needs: [build-openinsight]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - name: Storage Clickhouse [Traces,Logs,Metrics]
+            config: test/e2e/cases/storage/clickhouse/e2e.yaml
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v3
+        name: Download openinsight-e2e docker images
+        with:
+          name: openinsight-e2e-docker-images
+          path: docker-images
+      - name: Load docker images
+        run: find docker-images -name "*.tar" -exec docker load -i {} \;
+      - name: ${{ matrix.test.name }}
+        uses: apache/skywalking-infra-e2e@964ede199fe199e166920169dc5f8c9b214cfac5
+        with:
+          e2e-file: $GITHUB_WORKSPACE/${{ matrix.test.config }}
+      - uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        name: Upload Logs
+        with:
+          name: logs
+          path: "${{ env.SW_INFRA_E2E_LOG_DIR }}"

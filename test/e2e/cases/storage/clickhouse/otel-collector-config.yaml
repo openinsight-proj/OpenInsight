@@ -15,7 +15,7 @@ exporters:
       label1: value1
   logging:
   clickhouse:
-    dsn: tcp://default:changeme@localhost:9000/openinsight
+    dsn: tcp://default:changeme@clickhouse:9000/openinsight
     logs_table_name: openinsight_logs
     traces_table_name: openinsight_traces
     metrics_table_name: openinsight_metrics
@@ -45,7 +45,7 @@ extensions:
         endpoint: 0.0.0.0:18889
     storage:
       clickhouse:
-        dsn: tcp://default:changeme@localhost:9000/openinsight
+        dsn: tcp://default:changeme@clickhouse:9000/openinsight
         logging_table_name: openinsight_logs
         tracing_table_name: openinsight_traces
         metrics_table_name: openinsight_metrics

@@ -78,7 +78,7 @@ func (h *HistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.L
 	duration := time.Since(start)
 
 	//TODO latency metrics
-	logger.Info("insert histogram metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert histogram metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }
