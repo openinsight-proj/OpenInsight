@@ -42,6 +42,8 @@ func simpleMetrics(count int) pmetric.Metrics {
 		// histogram
 		m = sm.Metrics().AppendEmpty()
 		dpHisto := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+		dpHisto.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dpHisto.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		dpHisto.SetCount(1)
 		dpHisto.SetSum(1)
 		dpHisto.Attributes().PutStr("key", "value")
@@ -58,6 +60,8 @@ func simpleMetrics(count int) pmetric.Metrics {
 		// exp histogram
 		m = sm.Metrics().AppendEmpty()
 		dpExpHisto := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+		dpExpHisto.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dpExpHisto.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		dpExpHisto.SetSum(1)
 		dpExpHisto.SetMin(0)
 		dpExpHisto.SetMax(1)
@@ -78,6 +82,8 @@ func simpleMetrics(count int) pmetric.Metrics {
 		// summary
 		m = sm.Metrics().AppendEmpty()
 		summary := m.SetEmptySummary().DataPoints().AppendEmpty()
+		summary.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		summary.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		summary.Attributes().PutStr("key", "value")
 		summary.Attributes().PutStr("key2", "value2")
 		summary.SetCount(1)
@@ -122,7 +128,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 // local dev test
 func Test_newMetricsExporter(t *testing.T) {
 	exporter := newTestMetricsExporter(t, defaultDSN)
-	mustPushMetricsData(t, exporter, simpleMetrics(2))
+	mustPushMetricsData(t, exporter, simpleMetrics(1))
 }
 
 // still in process
