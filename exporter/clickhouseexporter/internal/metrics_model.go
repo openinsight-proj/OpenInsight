@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
     ) CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName,Attributes,TimeUnix)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 	IsMonotonic Boolean CODEC(Delta, ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName,Attributes,TimeUnix)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
     Max Float64 CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName,Attributes,TimeUnix)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
     Max Float64 CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName,Attributes,TimeUnix)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS %s_summary (
     Flags UInt32  CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName,Attributes,TimeUnix)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 )
