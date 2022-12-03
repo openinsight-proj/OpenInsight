@@ -1,18 +1,34 @@
-package internal
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"strings"
+
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"strings"
 )
 
 const (
-
 	// language=ClickHouse SQL
 	createGaugeTableSQL = `
 CREATE TABLE IF NOT EXISTS %s_gauge (
@@ -23,6 +39,7 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -42,7 +59,8 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
     ) CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,TimeUnix)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -55,6 +73,7 @@ CREATE TABLE IF NOT EXISTS %s_sum (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+	ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -76,7 +95,8 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 	IsMonotonic Boolean CODEC(Delta, ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,TimeUnix)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -89,6 +109,7 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -112,7 +133,8 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
     Max Float64 CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,TimeUnix)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -125,6 +147,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -152,7 +175,8 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
     Max Float64 CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,TimeUnix)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -165,6 +189,7 @@ CREATE TABLE IF NOT EXISTS %s_summary (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -180,7 +205,8 @@ CREATE TABLE IF NOT EXISTS %s_summary (
     Flags UInt32  CODEC(ZSTD(1))
 ) ENGINE MergeTree()
 %s
-ORDER BY (MetricName,Attributes,TimeUnix)
+PARTITION BY toDate(TimeUnix)
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 )
@@ -316,10 +342,6 @@ const (
     Flags) VALUES `
 )
 
-/*
-
- */
-
 var supportMetricsType = [...]string{createGaugeTableSQL, createSumTableSQL, createHistogramTableSQL, createExpHistogramTableSQL, createSummaryTableSQL}
 
 type MetricsModel interface {
@@ -329,16 +351,17 @@ type MetricsModel interface {
 }
 
 type MetricsMetaData struct {
-	ResAttr    map[string]string
-	ResUrl     string
-	ScopeUrl   string
-	ScopeInstr pcommon.InstrumentationScope
+	ServiceName string
+	ResAttr     map[string]string
+	ResURL      string
+	ScopeURL    string
+	ScopeInstr  pcommon.InstrumentationScope
 }
 
-func CreateMetricsTable(tableName string, TTLDays uint, db *sql.DB) error {
+func CreateMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
 	var ttlExpr string
-	if TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, TTLDays)
+	if ttlDays > 0 {
+		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
 	}
 	for _, table := range supportMetricsType {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
@@ -376,12 +399,11 @@ func InjectMetaData(metricsMap map[pmetric.MetricType]MetricsModel, metaData *Me
 }
 
 func InsertMetrics(ctx context.Context, tx *sql.Tx, metricsMap map[pmetric.MetricType]MetricsModel, logger *zap.Logger) error {
+	var errs []error
 	for _, metrics := range metricsMap {
-		if err := metrics.Insert(ctx, tx, logger); err != nil {
-			return err
-		}
+		errs = append(errs, metrics.Insert(ctx, tx, logger))
 	}
-	return nil
+	return multierr.Combine(errs...)
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
@@ -395,12 +417,16 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 	)
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
-		times = append(times, exemplar.Timestamp().AsTime())
-		floatValues = append(floatValues, exemplar.DoubleValue())
-		intValues = append(intValues, exemplar.IntValue())
-		traceIDs = append(traceIDs, exemplar.TraceID().HexString())
-		spanIDs = append(spanIDs, exemplar.SpanID().HexString())
+		if !exemplar.TraceID().IsEmpty() && !exemplar.SpanID().IsEmpty() {
+			attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
+			times = append(times, exemplar.Timestamp().AsTime())
+			floatValues = append(floatValues, exemplar.DoubleValue())
+			intValues = append(intValues, exemplar.IntValue())
+			traceID := exemplar.TraceID()
+			traceIDs = append(traceIDs, hex.EncodeToString(traceID[:]))
+			spanID := exemplar.SpanID()
+			spanIDs = append(spanIDs, hex.EncodeToString(spanID[:]))
+		}
 	}
 	return attrs, times, floatValues, intValues, traceIDs, spanIDs
 }

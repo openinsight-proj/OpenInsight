@@ -1,16 +1,31 @@
-package internal
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
-const histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type histogramModel struct {
 	metricName        string
@@ -35,12 +50,13 @@ func (h *HistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.L
 			valuePlaceholders = append(valuePlaceholders, histogramPlaceholders)
 
 			valueArgs = append(valueArgs, h.metadata.ResAttr)
-			valueArgs = append(valueArgs, h.metadata.ResUrl)
+			valueArgs = append(valueArgs, h.metadata.ResURL)
 			valueArgs = append(valueArgs, h.metadata.ScopeInstr.Name())
 			valueArgs = append(valueArgs, h.metadata.ScopeInstr.Version())
 			valueArgs = append(valueArgs, attributesToMap(h.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, h.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, h.metadata.ScopeUrl)
+			valueArgs = append(valueArgs, h.metadata.ScopeURL)
+			valueArgs = append(valueArgs, h.metadata.ServiceName)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
@@ -70,15 +86,14 @@ func (h *HistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.L
 	}
 
 	start := time.Now()
-	query := fmt.Sprintf("%s %s", h.InsertSQL, strings.Join(valuePlaceholders, ","))
-	_, err := tx.ExecContext(ctx, query, valueArgs...)
+	_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", h.InsertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
 	if err != nil {
 		return fmt.Errorf("insert histogram metrics fail:%w", err)
 	}
 	duration := time.Since(start)
 
-	//TODO latency metrics
-	logger.Debug("insert histogram metrics", zap.Int("records", len(valuePlaceholders)),
+	// TODO latency metrics
+	logger.Info("insert histogram metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }

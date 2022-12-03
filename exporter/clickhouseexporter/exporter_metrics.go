@@ -8,6 +8,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 type metricsExporter struct {
@@ -52,11 +53,16 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			metaData := internal.MetricsMetaData{}
 			metrics := md.ResourceMetrics().At(i)
 			res := metrics.Resource()
+			var serviceName string
+			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
+				serviceName = v.Str()
+			}
+			metaData.ServiceName = serviceName
 			metaData.ResAttr = attributesToMap(res.Attributes())
-			metaData.ResUrl = metrics.SchemaUrl()
+			metaData.ResURL = metrics.SchemaUrl()
 			for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 				rs := metrics.ScopeMetrics().At(j).Metrics()
-				metaData.ScopeUrl = metrics.ScopeMetrics().At(j).SchemaUrl()
+				metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
 				metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)

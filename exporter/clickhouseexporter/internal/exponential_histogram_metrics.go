@@ -1,16 +1,31 @@
-package internal
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
-const expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type expHistogramModel struct {
 	metricName        string
@@ -35,12 +50,13 @@ func (e *ExpHistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *za
 			valuePlaceholders = append(valuePlaceholders, expHistogramPlaceholders)
 
 			valueArgs = append(valueArgs, e.metadata.ResAttr)
-			valueArgs = append(valueArgs, e.metadata.ResUrl)
+			valueArgs = append(valueArgs, e.metadata.ResURL)
 			valueArgs = append(valueArgs, e.metadata.ScopeInstr.Name())
 			valueArgs = append(valueArgs, e.metadata.ScopeInstr.Version())
 			valueArgs = append(valueArgs, attributesToMap(e.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, e.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, e.metadata.ScopeUrl)
+			valueArgs = append(valueArgs, e.metadata.ScopeURL)
+			valueArgs = append(valueArgs, e.metadata.ServiceName)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
@@ -80,8 +96,8 @@ func (e *ExpHistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *za
 	}
 	duration := time.Since(start)
 
-	//TODO latency metrics
-	logger.Debug("insert exponential histogram metrics", zap.Int("records", len(valuePlaceholders)),
+	// TODO latency metrics
+	logger.Info("insert exponential histogram metrics", zap.Int("records", len(valuePlaceholders)),
 		zap.String("cost", duration.String()))
 	return nil
 }
