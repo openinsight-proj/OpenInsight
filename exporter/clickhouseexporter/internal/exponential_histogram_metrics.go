@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type expHistogramModel struct {
 	metricName        string
@@ -56,13 +56,12 @@ func (e *ExpHistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *za
 			valueArgs = append(valueArgs, attributesToMap(e.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, e.metadata.ScopeInstr.DroppedAttributesCount())
 			valueArgs = append(valueArgs, e.metadata.ScopeURL)
-			valueArgs = append(valueArgs, e.metadata.ServiceName)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime())
+			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
+			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
 			valueArgs = append(valueArgs, dp.Count())
 			valueArgs = append(valueArgs, dp.Sum())
 			valueArgs = append(valueArgs, dp.Scale())
