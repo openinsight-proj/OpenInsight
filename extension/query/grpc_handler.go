@@ -2,7 +2,7 @@ package query
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/tracing/v1alpha1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1 "go.opentelemetry.io/proto/otlp/trace/v1"

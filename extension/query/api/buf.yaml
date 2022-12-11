@@ -1,0 +1,13 @@
+version: v1
+deps:
+  - buf.build/gogo/protobuf:5461a3dfa9d941da82028ab185dc2a0e
+  - buf.build/googleapis/googleapis:faacf837d7304c58b7c9020c7807fa6e
+  - buf.build/opentelemetry/opentelemetry:038316eb65414db8bb0cd88c47a4ee0f
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+  ignore:
+    - google/protobuf/duration.proto
