@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const gaugePlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const gaugePlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type gaugeModel struct {
 	metricName        string
@@ -56,12 +56,11 @@ func (g *GaugeMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Logge
 			valueArgs = append(valueArgs, attributesToMap(g.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, g.metadata.ScopeInstr.DroppedAttributesCount())
 			valueArgs = append(valueArgs, g.metadata.ScopeURL)
-			valueArgs = append(valueArgs, g.metadata.ServiceName)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime())
+			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
 			valueArgs = append(valueArgs, dp.DoubleValue())
 			valueArgs = append(valueArgs, dp.IntValue())
 			valueArgs = append(valueArgs, uint32(dp.Flags()))
@@ -79,7 +78,6 @@ func (g *GaugeMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Logge
 	if len(valuePlaceholders) == 0 {
 		return nil
 	}
-
 	start := time.Now()
 	_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.InsertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
 	if err != nil {

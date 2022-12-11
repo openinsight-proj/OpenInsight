@@ -1,14 +1,28 @@
-package clickhouseexporter
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 type metricsExporter struct {
@@ -19,6 +33,9 @@ type metricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 	if err := createDatabase(cfg); err != nil {
 		return nil, err
 	}
@@ -53,11 +70,6 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			metaData := internal.MetricsMetaData{}
 			metrics := md.ResourceMetrics().At(i)
 			res := metrics.Resource()
-			var serviceName string
-			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
-			metaData.ServiceName = serviceName
 			metaData.ResAttr = attributesToMap(res.Attributes())
 			metaData.ResURL = metrics.SchemaUrl()
 			for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
@@ -85,9 +97,9 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			}
 		}
 
-		// batch https://clickhouse.com/docs/zh/introduction/performance/
+		// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
 		if err := internal.InsertMetrics(ctx, tx, metricsMap, e.logger); err != nil {
-			//todo retry
+			// TODO retry
 			return fmt.Errorf("ExecContext:%w", err)
 		}
 

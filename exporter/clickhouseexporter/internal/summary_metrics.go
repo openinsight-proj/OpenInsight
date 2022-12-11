@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const summaryPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const summaryPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type summaryModel struct {
 	metricName        string
@@ -56,13 +56,12 @@ func (s *SummaryMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Log
 			valueArgs = append(valueArgs, attributesToMap(s.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, s.metadata.ScopeInstr.DroppedAttributesCount())
 			valueArgs = append(valueArgs, s.metadata.ScopeURL)
-			valueArgs = append(valueArgs, s.metadata.ScopeURL)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime())
+			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
+			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
 			valueArgs = append(valueArgs, dp.Count())
 			valueArgs = append(valueArgs, dp.Sum())
 

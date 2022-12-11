@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type histogramModel struct {
 	metricName        string
@@ -56,13 +56,12 @@ func (h *HistogramMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.L
 			valueArgs = append(valueArgs, attributesToMap(h.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, h.metadata.ScopeInstr.DroppedAttributesCount())
 			valueArgs = append(valueArgs, h.metadata.ScopeURL)
-			valueArgs = append(valueArgs, h.metadata.ServiceName)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime())
+			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
+			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
 			valueArgs = append(valueArgs, dp.Count())
 			valueArgs = append(valueArgs, dp.Sum())
 			valueArgs = append(valueArgs, convertSliceToArraySet(dp.BucketCounts().AsRaw()))

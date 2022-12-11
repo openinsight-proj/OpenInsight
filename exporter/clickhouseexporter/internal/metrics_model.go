@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
-    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -60,7 +59,7 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -73,7 +72,6 @@ CREATE TABLE IF NOT EXISTS %s_sum (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
-	ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -96,7 +94,7 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -109,7 +107,6 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
-    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -134,7 +131,7 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -147,7 +144,6 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
-    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -176,7 +172,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -189,7 +185,6 @@ CREATE TABLE IF NOT EXISTS %s_summary (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
-    ServiceName LowCardinality(String) CODEC (ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -206,7 +201,7 @@ CREATE TABLE IF NOT EXISTS %s_summary (
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 )
@@ -351,11 +346,10 @@ type MetricsModel interface {
 }
 
 type MetricsMetaData struct {
-	ServiceName string
-	ResAttr     map[string]string
-	ResURL      string
-	ScopeURL    string
-	ScopeInstr  pcommon.InstrumentationScope
+	ResAttr    map[string]string
+	ResURL     string
+	ScopeURL   string
+	ScopeInstr pcommon.InstrumentationScope
 }
 
 func CreateMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {

@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const sumPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const sumPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 
 type sumModel struct {
 	metricName        string
@@ -56,12 +56,11 @@ func (s *SumMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger)
 			valueArgs = append(valueArgs, attributesToMap(s.metadata.ScopeInstr.Attributes()))
 			valueArgs = append(valueArgs, s.metadata.ScopeInstr.DroppedAttributesCount())
 			valueArgs = append(valueArgs, s.metadata.ScopeURL)
-			valueArgs = append(valueArgs, s.metadata.ServiceName)
 			valueArgs = append(valueArgs, model.metricName)
 			valueArgs = append(valueArgs, model.metricDescription)
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime())
+			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
 			valueArgs = append(valueArgs, dp.DoubleValue())
 			valueArgs = append(valueArgs, dp.IntValue())
 			valueArgs = append(valueArgs, uint32(dp.Flags()))
