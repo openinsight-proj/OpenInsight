@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/tracing/v1alpha1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin"
 	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/collector/component"
