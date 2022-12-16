@@ -162,12 +162,13 @@ extensions:
       storage_type: prometheus
 ```
 
-## Compatiblity
+## Compatibility
 | OpenInsight Version | OTEL COl Contrib Version |
-|---------------------|------------------------|
-| v0.0.1              | v0.59.0                |
-| v0.0.2              | v0.62.0                |
-| v0.0.3              | v0.62.1                |
+|---------------------|--------------------------|
+| v0.0.3              | v0.62.1                  |
+
+This table only show the latest version compatibility, more version compatibility please refer [version compatiblity list](docs/version_compatibility_2022.md)
+
 
 ## Contributors
 <a href="https://github.com/openinsight-proj/openinsight/graphs/contributors">
