@@ -1,0 +1,7 @@
+extensions:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.0
+    path: "./extension/query"
+
+exporters:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.63.0
+    path: "./exporter/clickhouseexporter"
