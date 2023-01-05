@@ -186,6 +186,7 @@ def pushToOpeninsight(newManifest, newReadme, newCbility):
                                     openinsightRepo.get_contents('docs/{}'.format(cbilityFile), ref).sha,
                                     branchName)
     else:
+        # todo  newCbility only contain the newest version line
         openinsightRepo.create_file('docs/{}'.format(cbilityFile),
                                     'create {}'.format(cbilityFile),
                                     newCbility,
@@ -209,8 +210,8 @@ def upstreamJob():
     upstreamVersion, openinsightVersion = repoContents['upstreamMfest']['dist']['version'], \
                                           repoContents['openinsightMfest']['dist']['version']
     logger.info('upstream verion:v{}, openinsightCbility version:v{}'.format(upstreamVersion, openinsightVersion))
-    # if version.parse(upstreamVersion) > version.parse(openinsightVersion) and checkBranchs(upstreamVersion):
-    if version.parse(upstreamVersion) > version.parse(openinsightVersion):
+    if version.parse(upstreamVersion) > version.parse(openinsightVersion) and checkBranchs(upstreamVersion):
+    # if version.parse(upstreamVersion) > version.parse(openinsightVersion):
 
         logger.info("detect a new version and no upgrade PR for is version, do sync")
         newManifest = updateManifest(repoContents['upstreamMfest'], repoContents['openinsightDistruMfest'])
