@@ -83,7 +83,24 @@ def gomodSync(manifest, version):
     return manifest
 
 
+def parseComponent(str):
+    return str.split(' ')[0].split('/')[-1]
+
+
 def updateManifest(upstreamMfest, openinsightDistruMfest):
+    for k, v in openinsightDistruMfest.items():
+        if k == 'dist':
+            continue
+        if k == 'replaces':
+            continue
+        for v2 in v:
+            target = parseComponent(v2['gomod'])
+            resource = upstreamMfest[k]
+            for c in resource:
+                if parseComponent(c['gomod']) == target:
+                    resource.remove(c)
+                    break
+
     newManifest = {}
     match args.gomodSyncStrategy:
         case 'remain':
@@ -192,7 +209,9 @@ def upstreamJob():
     upstreamVersion, openinsightVersion = repoContents['upstreamMfest']['dist']['version'], \
                                           repoContents['openinsightMfest']['dist']['version']
     logger.info('upstream verion:v{}, openinsightCbility version:v{}'.format(upstreamVersion, openinsightVersion))
-    if version.parse(upstreamVersion) > version.parse(openinsightVersion) and checkBranchs(upstreamVersion):
+    # if version.parse(upstreamVersion) > version.parse(openinsightVersion) and checkBranchs(upstreamVersion):
+    if version.parse(upstreamVersion) > version.parse(openinsightVersion):
+
         logger.info("detect a new version and no upgrade PR for is version, do sync")
         newManifest = updateManifest(repoContents['upstreamMfest'], repoContents['openinsightDistruMfest'])
         newReadme, newCbility = updateReadme(upstreamVersion, repoContents['openinsightReadme'],
