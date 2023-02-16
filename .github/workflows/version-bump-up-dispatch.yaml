@@ -38,7 +38,7 @@ on:
 
 jobs:
   version-bump-up-dispatch:
-    if: github.actor != 'Frapschen' && github.actor != 'JaredTan95'
+    if: github.actor == 'Frapschen' && github.actor == 'JaredTan95'
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
