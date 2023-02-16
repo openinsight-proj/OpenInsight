@@ -33,7 +33,7 @@ on:
         default: 'remind'
         type: choice
         options:
-          - remind
+          - remain
           - sync
 
 env:
