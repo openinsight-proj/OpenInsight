@@ -61,6 +61,7 @@ jobs:
           JOB: ${{ inputs.jobType }}
           STRATEGY: ${{ inputs.strategy }}
         run: |
+          echo $MY_GITHUB_TOKEN
           echo "Job: $JOB"
           echo "Strategy: $STRATEGY"
           python .github/workflows/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
