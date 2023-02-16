@@ -20,6 +20,9 @@ on:
   schedule:
     - cron: '0 12 * * *'
 
+env:
+  MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
 jobs:
   version-bump-up:
     timeout-minutes: 5

@@ -36,6 +36,9 @@ on:
           - remind
           - sync
 
+env:
+  MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+
 jobs:
   version-bump-up-dispatch:
     if: github.actor == 'Frapschen' || github.actor == 'JaredTan95'
