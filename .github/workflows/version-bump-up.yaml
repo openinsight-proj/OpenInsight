@@ -22,15 +22,15 @@ on:
 
 jobs:
   version-bump-up:
-  timeout-minutes: 5
-  runs-on: ubuntu-latest
-  steps:
-    - name: Setup Python
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-        cache: 'pip'
-    - name: Download dependency
-      run: pip install -r ./scripts/version-bump-up/requirements.txt
-    - name: version bump up
-      run: python ./scripts/version-bump-up/version-bump-up.py --job upstream --gomodSyncStrategy remind
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Download dependency
+        run: pip install -r ./scripts/version-bump-up/requirements.txt
+      - name: version bump up
+        run: python ./scripts/version-bump-up/version-bump-up.py --job upstream --gomodSyncStrategy remind
