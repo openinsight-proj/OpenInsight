@@ -25,80 +25,149 @@ import (
 	"go.uber.org/zap"
 )
 
-const summaryPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+const (
+	// language=ClickHouse SQL
+	createSummaryTableSQL = `
+CREATE TABLE IF NOT EXISTS %s_summary (
+    ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ResourceSchemaUrl String CODEC(ZSTD(1)),
+    ScopeName String CODEC(ZSTD(1)),
+    ScopeVersion String CODEC(ZSTD(1)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+    ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
+    ScopeSchemaUrl String CODEC(ZSTD(1)),
+    MetricName String CODEC(ZSTD(1)),
+    MetricDescription String CODEC(ZSTD(1)),
+    MetricUnit String CODEC(ZSTD(1)),
+    Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
+    Count UInt64 CODEC(Delta, ZSTD(1)),
+    Sum Float64 CODEC(ZSTD(1)),
+    ValueAtQuantiles Nested(
+		Quantile Float64,
+		Value Float64
+	) CODEC(ZSTD(1)),
+    Flags UInt32  CODEC(ZSTD(1)),
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
+) ENGINE MergeTree()
+%s
+PARTITION BY toDate(TimeUnix)
+ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
+`
+	// language=ClickHouse SQL
+	insertSummaryTableSQL = `INSERT INTO %s_summary (
+	ResourceAttributes,
+    ResourceSchemaUrl,
+    ScopeName,
+    ScopeVersion,
+    ScopeAttributes,
+    ScopeDroppedAttrCount,
+    ScopeSchemaUrl,
+    MetricName,
+    MetricDescription,
+    MetricUnit,
+    Attributes,
+	StartTimeUnix,
+	TimeUnix,
+    Count,
+    Sum,
+    ValueAtQuantiles.Quantile,
+	ValueAtQuantiles.Value,
+    Flags) VALUES `
+	summaryValueCounts = 18
+)
+
+var summaryPlaceholders = newPlaceholder(18)
 
 type summaryModel struct {
 	metricName        string
 	metricDescription string
 	metricUnit        string
+	metadata          *MetricsMetaData
 	summary           pmetric.Summary
 }
 
-type SummaryMetrics struct {
+type summaryMetrics struct {
 	summaryModel []*summaryModel
-	metadata     *MetricsMetaData
-	InsertSQL    string
+	insertSQL    string
+	count        int
 }
 
-func (s *SummaryMetrics) Insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger) error {
-	var valuePlaceholders []string
-	var valueArgs []interface{}
-
-	for _, model := range s.summaryModel {
-		for i := 0; i < model.summary.DataPoints().Len(); i++ {
-			dp := model.summary.DataPoints().At(i)
-			valuePlaceholders = append(valuePlaceholders, summaryPlaceholders)
-
-			valueArgs = append(valueArgs, s.metadata.ResAttr)
-			valueArgs = append(valueArgs, s.metadata.ResURL)
-			valueArgs = append(valueArgs, s.metadata.ScopeInstr.Name())
-			valueArgs = append(valueArgs, s.metadata.ScopeInstr.Version())
-			valueArgs = append(valueArgs, attributesToMap(s.metadata.ScopeInstr.Attributes()))
-			valueArgs = append(valueArgs, s.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, s.metadata.ScopeURL)
-			valueArgs = append(valueArgs, model.metricName)
-			valueArgs = append(valueArgs, model.metricDescription)
-			valueArgs = append(valueArgs, model.metricUnit)
-			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Count())
-			valueArgs = append(valueArgs, dp.Sum())
-
-			quantiles, values := convertValueAtQuantile(dp.QuantileValues())
-			valueArgs = append(valueArgs, quantiles)
-			valueArgs = append(valueArgs, values)
-			valueArgs = append(valueArgs, uint32(dp.Flags()))
-		}
-	}
-
-	if len(valuePlaceholders) == 0 {
+func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
+	if s.count == 0 {
 		return nil
 	}
 
+	valueArgs := make([]any, s.count*summaryValueCounts)
+	var b strings.Builder
+
+	index := 0
+	for _, model := range s.summaryModel {
+		for i := 0; i < model.summary.DataPoints().Len(); i++ {
+			dp := model.summary.DataPoints().At(i)
+			b.WriteString(*summaryPlaceholders)
+
+			valueArgs[index] = model.metadata.ResAttr
+			valueArgs[index+1] = model.metadata.ResURL
+			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
+			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
+			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
+			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
+			valueArgs[index+6] = model.metadata.ScopeURL
+			valueArgs[index+7] = model.metricName
+			valueArgs[index+8] = model.metricDescription
+			valueArgs[index+9] = model.metricUnit
+			valueArgs[index+10] = attributesToMap(dp.Attributes())
+			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+13] = dp.Count()
+			valueArgs[index+14] = dp.Sum()
+
+			quantiles, values := convertValueAtQuantile(dp.QuantileValues())
+			valueArgs[index+15] = quantiles
+			valueArgs[index+16] = values
+			valueArgs[index+17] = uint32(dp.Flags())
+
+			index += summaryValueCounts
+		}
+	}
+
 	start := time.Now()
-	_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.InsertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
+		return err
+	})
+	duration := time.Since(start)
 	if err != nil {
+		logger.Debug("insert summary metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert summary metrics fail:%w", err)
 	}
-	duration := time.Since(start)
 
 	// TODO latency metrics
-	logger.Info("insert summary metrics", zap.Int("records", len(valuePlaceholders)),
-		zap.String("cost", duration.String()))
+	logger.Debug("insert summary metrics", zap.Int("records", s.count),
+		zap.Duration("cost", duration))
 	return nil
 }
 
-func (s *SummaryMetrics) Add(metrics interface{}, name string, description string, unit string) {
-	summary, _ := metrics.(pmetric.Summary)
+func (s *summaryMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
+	summary, ok := metrics.(pmetric.Summary)
+	if !ok {
+		return fmt.Errorf("metrics param is not type of Summary")
+	}
+	s.count += summary.DataPoints().Len()
 	s.summaryModel = append(s.summaryModel, &summaryModel{
 		metricName:        name,
 		metricDescription: description,
 		metricUnit:        unit,
+		metadata:          metaData,
 		summary:           summary,
 	})
-}
-
-func (s *SummaryMetrics) InjectMetaData(metaData *MetricsMetaData) {
-	s.metadata = metaData
+	return nil
 }

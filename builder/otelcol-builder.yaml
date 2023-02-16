@@ -22,7 +22,7 @@ extensions:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.71.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.71.0
   import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.0
+- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.1
   path: ./extension/query
 exporters:
 - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.71.0
@@ -68,7 +68,7 @@ exporters:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.71.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.71.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.71.0
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.63.0
+- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.71.0
   path: ./exporter/clickhouseexporter
 processors:
 - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.71.0
