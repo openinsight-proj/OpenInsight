@@ -37,7 +37,7 @@ on:
           - sync
 
 env:
-  MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+  MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN_FOR_VERSION_BUMP_UP }}
 
 jobs:
   version-bump-up-dispatch:
