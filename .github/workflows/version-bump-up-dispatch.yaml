@@ -27,14 +27,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Python
-      - uses: actions/setup-python@v4
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           cache: 'pip'
-      - name: Download dependency
-        run: pip install -r ./scripts/version-bump-up/requirements.txt
       - name: version bump up
-        run: python ./scripts/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
         env:
           JOB: ${{ inputs.jobType }}
           STRATEGY: ${{ inputs.strategy }}
+        run: |
+          pip install -r ./scripts/version-bump-up/requirements.txt
+          echo "Job: $JOB"
+          echo "Strategy: $STRATEGY"
+          python ./scripts/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
