@@ -60,4 +60,4 @@ jobs:
         run: |
           echo "Job: $JOB"
           echo "Strategy: $STRATEGY"
-          python ./scripts/workflows/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
+          python .github/workflows/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY

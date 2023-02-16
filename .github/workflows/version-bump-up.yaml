@@ -29,8 +29,9 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          cache: 'pip'
-      - name: Download dependency
-        run: pip install -r ./scripts/version-bump-up/requirements.txt
+      - name: Install Python dependencies
+        uses: py-actions/py-dependency-install@v4
+        with:
+          path: ".github/workflows/version-bump-up/requirements.txt"
       - name: version bump up
-        run: python ./scripts/version-bump-up/version-bump-up.py --job upstream --gomodSyncStrategy remind
+        run: python .github/workflows/version-bump-up/version-bump-up.py --job upstream --gomodSyncStrategy remind
