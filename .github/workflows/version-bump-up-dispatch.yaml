@@ -54,7 +54,7 @@ jobs:
           JOB: ${{ inputs.jobType }}
           STRATEGY: ${{ inputs.strategy }}
         run: |
-          pip install -r ./scripts/version-bump-up/requirements.txt
+          pip install -r .github/workflows/version-bump-up/requirements.txt
           echo "Job: $JOB"
           echo "Strategy: $STRATEGY"
-          python ./scripts/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
+          python ./scripts/workflows/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
