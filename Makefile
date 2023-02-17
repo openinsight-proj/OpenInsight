@@ -42,7 +42,7 @@ all-modules:
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-builder-tools:
-	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.63.0
+	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools

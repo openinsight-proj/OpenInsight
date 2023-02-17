@@ -1,26 +1,27 @@
 package query
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
 
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "test-config.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -58,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 		MetricsTableName: "otel_metrics",
 	}
 
-	r0 := cfg.Extensions[config.NewComponentID(typeStr)]
+	r0 := cfg.Extensions[component.NewID(typeStr)]
 	queryConfig := r0.(*Config)
 	assert.Equal(t, queryConfig.TracingQuery.StorageType, defaultCfg.(*Config).TracingQuery.StorageType)
 }

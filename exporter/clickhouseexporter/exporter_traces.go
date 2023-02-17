@@ -22,9 +22,12 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type tracesExporter struct {
@@ -36,17 +39,8 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createTracesTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -58,8 +52,19 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *tracesExporter) Shutdown(_ context.Context) error {
+func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	if err := createTracesTable(ctx, e.cfg, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
+func (e *tracesExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -94,17 +99,17 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())
 					_, err = statement.ExecContext(ctx,
 						r.StartTimestamp().AsTime(),
-						r.TraceID().HexString(),
-						r.SpanID().HexString(),
-						r.ParentSpanID().HexString(),
+						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+						traceutil.SpanIDToHexOrEmptyString(r.ParentSpanID()),
 						r.TraceState().AsRaw(),
 						r.Name(),
-						r.Kind().String(),
+						traceutil.SpanKindStr(r.Kind()),
 						serviceName,
 						resAttr,
 						spanAttr,
 						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
-						status.Code().String(),
+						traceutil.StatusCodeStr(status.Code()),
 						status.Message(),
 						eventTimes,
 						eventNames,
@@ -152,8 +157,8 @@ func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []m
 	)
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
-		traceIDs = append(traceIDs, link.TraceID().HexString())
-		spanIDs = append(spanIDs, link.SpanID().HexString())
+		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
+		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))
 		states = append(states, link.TraceState().AsRaw())
 		attrs = append(attrs, attributesToMap(link.Attributes()))
 	}
@@ -250,8 +255,8 @@ const (
 	createTraceIDTsTableSQL = `
 create table IF NOT EXISTS %s_trace_id_ts (
      TraceId String CODEC(ZSTD(1)),
-     Start DateTime CODEC(ZSTD(1)),
-     End DateTime CODEC(ZSTD(1)),
+     Start DateTime64(9) CODEC(Delta, ZSTD(1)),
+     End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
@@ -263,8 +268,8 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv
 TO %s.%s_trace_id_ts
 AS SELECT
 TraceId,
-min(toDateTime(Timestamp)) as Start,
-max(toDateTime(Timestamp)) as End
+min(Timestamp) as Start,
+max(Timestamp) as End
 FROM
 %s.%s
 WHERE TraceId!=''
@@ -272,14 +277,14 @@ GROUP BY TraceId;
 `
 )
 
-func createTracesTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
+func createTracesTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateTracesTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traces table sql: %w", err)
 	}
-	if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+	if _, err := db.ExecContext(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traceIDTs table sql: %w", err)
 	}
-	if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+	if _, err := db.ExecContext(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traceIDTs view sql: %w", err)
 	}
 	return nil
@@ -306,7 +311,6 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
-	database, _ := parseDSNDatabase(cfg.DSN)
 	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
-		database, cfg.TracesTableName, database, cfg.TracesTableName)
+		cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
 }

@@ -2,6 +2,10 @@ package query
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/extension"
+	"net"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
@@ -11,8 +15,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"net"
-	"net/http"
 )
 
 // max msg size 20M
@@ -31,7 +33,7 @@ type queryServer struct {
 	settings         component.TelemetrySettings
 }
 
-var _ component.PipelineWatcher = (*queryServer)(nil)
+var _ extension.PipelineWatcher = (*queryServer)(nil)
 
 func (qs *queryServer) Start(_ context.Context, host component.Host) error {
 	closeGRPCGateway, err := qs.Server()

@@ -19,7 +19,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
@@ -33,18 +35,8 @@ type metricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = internal.CreateMetricsTable(cfg.MetricsTableName, cfg.TTLDays, client); err != nil {
 		return nil, err
 	}
 
@@ -55,8 +47,20 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *metricsExporter) Shutdown(ctx context.Context) error {
+func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	internal.SetLogger(e.logger)
+	if err := internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client); err != nil {
+		return err
+	}
+	return nil
+}
+
+// shutdown will shut down the exporter.
+func (e *metricsExporter) shutdown(ctx context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -64,46 +68,43 @@ func (e *metricsExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		metricsMap := internal.CreateMetricsModel(e.cfg.MetricsTableName)
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
-			metaData := internal.MetricsMetaData{}
-			metrics := md.ResourceMetrics().At(i)
-			res := metrics.Resource()
-			metaData.ResAttr = attributesToMap(res.Attributes())
-			metaData.ResURL = metrics.SchemaUrl()
-			for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
-				rs := metrics.ScopeMetrics().At(j).Metrics()
-				metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
-				metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
-				for k := 0; k < rs.Len(); k++ {
-					r := rs.At(k)
-					switch r.Type() {
-					case pmetric.MetricTypeGauge:
-						metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), r.Name(), r.Description(), r.Unit())
-					case pmetric.MetricTypeSum:
-						metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), r.Name(), r.Description(), r.Unit())
-					case pmetric.MetricTypeHistogram:
-						metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), r.Name(), r.Description(), r.Unit())
-					case pmetric.MetricTypeExponentialHistogram:
-						metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), r.Name(), r.Description(), r.Unit())
-					case pmetric.MetricTypeSummary:
-						metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), r.Name(), r.Description(), r.Unit())
-					default:
-						e.logger.Error("unsupported metrics type")
-					}
+	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		metaData := internal.MetricsMetaData{}
+		metrics := md.ResourceMetrics().At(i)
+		res := metrics.Resource()
+		metaData.ResAttr = attributesToMap(res.Attributes())
+		metaData.ResURL = metrics.SchemaUrl()
+		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
+			rs := metrics.ScopeMetrics().At(j).Metrics()
+			metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
+			metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
+			for k := 0; k < rs.Len(); k++ {
+				r := rs.At(k)
+				var errs error
+				switch r.Type() {
+				case pmetric.MetricTypeGauge:
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeSum:
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeHistogram:
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeExponentialHistogram:
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeSummary:
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
+				default:
+					return fmt.Errorf("unsupported metrics type")
 				}
-				internal.InjectMetaData(metricsMap, &metaData)
+				if errs != nil {
+					return errs
+				}
 			}
 		}
-
-		// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-		if err := internal.InsertMetrics(ctx, tx, metricsMap, e.logger); err != nil {
-			// TODO retry
-			return fmt.Errorf("ExecContext:%w", err)
-		}
-
-		return nil
-	})
-	return err
+	}
+	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
+	if err := internal.InsertMetrics(ctx, e.client, metricsMap); err != nil {
+		return err
+	}
+	return nil
 }
