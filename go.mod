@@ -1,3 +1,3 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib
 
-go 1.18
+go 1.19
