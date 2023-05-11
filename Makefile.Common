@@ -110,7 +110,7 @@ fmt:
 
 .PHONY: lint
 lint: misspell
-	$(LINT) run --allow-parallel-runners
+	$(LINT) run --allow-parallel-runners --timeout 5m
 
 .PHONY: tidy
 tidy:
