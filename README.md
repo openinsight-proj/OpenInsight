@@ -165,7 +165,7 @@ extensions:
 ## Compatibility
 | OpenInsight Version | OTEL COl Contrib Version |
 |---------------------|--------------------------|
-| v0.0.4              | v0.75.0                  |
+| v0.0.4              | v0.77.0                  |
 
 This table only show the latest version compatibility, more version compatibility please refer [version compatiblity list](docs/version_compatibility_2023.md)
 
