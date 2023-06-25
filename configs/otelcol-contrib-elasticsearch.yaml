@@ -1,21 +1,17 @@
 extensions:
   health_check:
-  pprof:
-    endpoint: 0.0.0.0:1777
-  zpages:
-    endpoint: 0.0.0.0:55679
   query:
     protocols:
       http:
-        endpoint: 0.0.0.0:18888
+        endpoint: 0.0.0.0:28888
       grpc:
-        endpoint: 0.0.0.0:18889
+        endpoint: 0.0.0.0:28889
     storage:
       elasticsearch:
-        endpoints: [ "https://172.16.188.1:30997" ]
-        traces_index: otlp-spans
+        endpoints: [ "http://172.16.201.1:30141" ]
+        traces_index: "otlp_spans-alias"
         user: elastic
-        password: 64QZx5epX63Yy10Fqr57OFp2
+        password: 8QZJ656ax3TXZqQh205l3Ee0
     tracing_query:
       storage_type: elasticsearch
     logging_query:
@@ -27,18 +23,14 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: 0.0.0.0:4317
       http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
 
   opencensus:
-
-  # Collect own metrics
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:8888']
 
   jaeger:
     protocols:
@@ -54,7 +46,7 @@ processors:
 
 exporters:
   logging:
-    logLevel: debug
+    verbosity: detailed
   prometheus:
     endpoint: "0.0.0.0:8889"
     const_labels:
@@ -63,11 +55,11 @@ exporters:
     tls:
       insecure: false
       insecure_skip_verify: true
-    endpoints: [https://172.16.188.1:30997]
+    endpoints: [ "http://172.16.201.1:30141" ]
     timeout: 2m
-    traces_index: otlp-spans
+    traces_index: otlp_spans-alias
     user: elastic
-    password: 64QZx5epX63Yy10Fqr57OFp2
+    password: 8QZJ656ax3TXZqQh205l3Ee0
     retry:
       max_requests: 5
 
@@ -76,13 +68,13 @@ service:
   pipelines:
 
     traces:
-      receivers: [otlp, opencensus, jaeger, zipkin]
+      receivers: [otlp, jaeger, zipkin]
       processors: [batch]
-      exporters: [logging,elasticsearch/trace]
+      exporters: [logging, elasticsearch/trace]
 
     metrics:
-      receivers: [otlp, opencensus, prometheus]
+      receivers: [opencensus]
       processors: [batch]
       exporters: [logging]
 
-  extensions: [health_check, query, pprof, zpages]
+  extensions: [query]

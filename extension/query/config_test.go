@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/clickhouse"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/es"
 )
 
 func TestLoadConfig(t *testing.T) {

@@ -8,6 +8,8 @@ import "opentelemetry/proto/resource/v1/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+
 
 option go_package = "tracing/v1alpha1";
 option java_package = "com.github.openinsight";
@@ -64,6 +66,70 @@ message GetServicesResponse {
   repeated string services = 1;
 }
 
+message TracesData {
+  repeated Trace traces = 1 [
+    (gogoproto.nullable) = false
+  ];
+}
+
+
+enum ValueType {
+  STRING = 0;
+  BOOL = 1;
+  INT64 = 2;
+  FLOAT64 = 3;
+  BINARY = 4;
+};
+
+message KeyValue {
+  option (gogoproto.equal) = true;
+  option (gogoproto.compare) = true;
+
+  string    key = 1;
+  ValueType v_type = 2;
+  string    v_str = 3;
+  bool      v_bool = 4;
+  int64     v_int64 = 5;
+  double    v_float64 = 6;
+  bytes     v_binary = 7;
+}
+
+message Process {
+  string service_name = 1;
+  repeated KeyValue tags = 2 [
+    (gogoproto.nullable) = false
+  ];
+}
+
+message Trace {
+  message ResourceProcess {
+    Process process = 2 [
+      (gogoproto.nullable) = false
+    ];
+  }
+  repeated ResourceProcess process_map = 1 [
+    (gogoproto.nullable) = false
+  ];
+  string operation_name = 2;
+  repeated string warnings = 3;
+  string trace_id = 4 [
+    (gogoproto.nullable) = false
+  ];
+  enum TraceStatus{
+    UNHEALTHY = 0;
+    HEALTHY = 1;
+  }
+  TraceStatus status = 5 [
+    (gogoproto.nullable) = false
+  ];
+  uint32 span_count = 6;
+  string start_time = 7;
+  string duration = 8 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
 message ResourcesData {
   // An array of ResourceMetrics.
   // For data coming from a single resource this array will typically contain
@@ -106,7 +172,7 @@ service QueryService {
 
   // SearchTraces searches for traces.
   // See GetTrace for JSON unmarshalling.
-  rpc SearchTraces(FindTracesRequest) returns (opentelemetry.proto.trace.v1.TracesData) {
+  rpc SearchTraces(FindTracesRequest) returns (TracesData) {
     option (google.api.http) = {
       get:"/apis/traces/v1alpha1/trace"
     };

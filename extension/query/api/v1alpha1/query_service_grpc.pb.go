@@ -32,7 +32,7 @@ type QueryServiceClient interface {
 	GetTrace(ctx context.Context, in *GetTraceRequest, opts ...grpc.CallOption) (*v1.TracesData, error)
 	// SearchTraces searches for traces.
 	// See GetTrace for JSON unmarshalling.
-	SearchTraces(ctx context.Context, in *FindTracesRequest, opts ...grpc.CallOption) (*v1.TracesData, error)
+	SearchTraces(ctx context.Context, in *FindTracesRequest, opts ...grpc.CallOption) (*TracesData, error)
 	// SearchTraces searches for traces.
 	// See GetTrace for JSON unmarshalling.
 	SearchLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*v11.LogsData, error)
@@ -59,8 +59,8 @@ func (c *queryServiceClient) GetTrace(ctx context.Context, in *GetTraceRequest, 
 	return out, nil
 }
 
-func (c *queryServiceClient) SearchTraces(ctx context.Context, in *FindTracesRequest, opts ...grpc.CallOption) (*v1.TracesData, error) {
-	out := new(v1.TracesData)
+func (c *queryServiceClient) SearchTraces(ctx context.Context, in *FindTracesRequest, opts ...grpc.CallOption) (*TracesData, error) {
+	out := new(TracesData)
 	err := c.cc.Invoke(ctx, "/v1alpha1.QueryService/SearchTraces", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ type QueryServiceServer interface {
 	GetTrace(context.Context, *GetTraceRequest) (*v1.TracesData, error)
 	// SearchTraces searches for traces.
 	// See GetTrace for JSON unmarshalling.
-	SearchTraces(context.Context, *FindTracesRequest) (*v1.TracesData, error)
+	SearchTraces(context.Context, *FindTracesRequest) (*TracesData, error)
 	// SearchTraces searches for traces.
 	// See GetTrace for JSON unmarshalling.
 	SearchLogs(context.Context, *GetLogsRequest) (*v11.LogsData, error)
@@ -124,7 +124,7 @@ type UnimplementedQueryServiceServer struct {
 func (UnimplementedQueryServiceServer) GetTrace(context.Context, *GetTraceRequest) (*v1.TracesData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTrace not implemented")
 }
-func (UnimplementedQueryServiceServer) SearchTraces(context.Context, *FindTracesRequest) (*v1.TracesData, error) {
+func (UnimplementedQueryServiceServer) SearchTraces(context.Context, *FindTracesRequest) (*TracesData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchTraces not implemented")
 }
 func (UnimplementedQueryServiceServer) SearchLogs(context.Context, *GetLogsRequest) (*v11.LogsData, error) {
