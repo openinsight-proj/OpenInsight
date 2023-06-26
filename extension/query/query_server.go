@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/handler"
 	"go.opentelemetry.io/collector/extension"
 	"net"
 	"net/http"
@@ -136,9 +137,11 @@ func (qs *queryServer) Server() (context.CancelFunc, error) {
 		qs.logger.Fatal("Failed to create span reader", zap.Error(err))
 	}
 
-	v1alpha1.RegisterQueryServiceServer(qs.grpcServer, &Handler{QueryService: &QueryService{
-		tracingQuerySvc: tracingQuerySvc,
-	}})
+	qSvc := &handler.QueryService{
+		TracingQuerySvc: tracingQuerySvc,
+	}
+
+	v1alpha1.RegisterQueryServiceServer(qs.grpcServer, &handler.Handler{QueryService: qSvc})
 	err = v1alpha1.RegisterQueryServiceHandlerFromEndpoint(ctx, qs.GatewayServerMux, qs.config.Protocols.Http.Endpoint, extraOpt)
 	if err != nil {
 		closeGRPCGateway()

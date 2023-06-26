@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aquasecurity/esquery"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
@@ -74,18 +75,35 @@ func (q *ElasticsearchQuery) GetService(ctx context.Context) ([]*v1_resource.Res
 	return services, nil
 }
 
-func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
-
-	qsl, err := buildTraceQuery(query)
-	if err != nil {
-		return nil, err
-	}
-	res, err := q.client.DoSearch(ctx, q.SpanIndex, qsl)
+func (q *ElasticsearchQuery) SearchTraces(ctx context.Context, query *datasource.TraceQueryParameters) (*v1alpha1.TracesData, error) {
+	ids, err := q.FindTraceIds(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return DocumentsResourceSpansConvert(res.Hits)
+	traces, err := q.MultiGetTraces(ctx, ids...)
+	if err != nil {
+		zap.S().Errorf("failed to query traces:%v", err)
+	}
+	return traces, nil
+}
+
+func (q *ElasticsearchQuery) MultiGetTraces(ctx context.Context, traceIds ...string) (*v1alpha1.TracesData, error) {
+	qe := esquery.Search()
+	boolQ := esquery.Bool()
+	boolQ.Must(Terms("TraceId", traceIds...))
+	// TODO(jian): 65536(es default limit) right?
+	qe.Query(boolQ).Size(5000)
+	res, err := q.client.DoSearch(ctx, q.SpanIndex, qe)
+	if err != nil {
+		return nil, err
+	}
+	tracesData, err := DocumentsResourceSpansConvert(res.Hits)
+	if err != nil {
+		return nil, err
+	}
+
+	return datasource.DocumentsTracesConvert(tracesData)
 }
 
 func (q *ElasticsearchQuery) GetTrace(ctx context.Context, traceID string) (*v1_trace.TracesData, error) {
@@ -109,7 +127,7 @@ func (q *ElasticsearchQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, err
 	return nil, nil
 }
 
-func (q *ElasticsearchQuery) GetOperations(ctx context.Context, params *storage.OperationsQueryParameters) ([]string, error) {
+func (q *ElasticsearchQuery) GetOperations(ctx context.Context, params *datasource.OperationsQueryParameters) ([]string, error) {
 	// boolean search query
 	query := esquery.Search()
 	boolQ := esquery.Bool()
@@ -156,16 +174,64 @@ func (q *ElasticsearchQuery) GetOperations(ctx context.Context, params *storage.
 	return operations, nil
 }
 
+func (q *ElasticsearchQuery) FindTraceIds(ctx context.Context, queryParams *datasource.TraceQueryParameters) ([]string, error) {
+	idsQsl, err := buildTraceIdsQuery(queryParams)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := q.client.DoSearch(ctx, q.SpanIndex, idsQsl)
+	if err != nil {
+		return nil, err
+	}
+
+	var ids []string
+	for _, agg := range res.Aggregations {
+		rMaps, err := DecodeSearchResult(*agg)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range rMaps {
+			switch k {
+			case "buckets":
+				values := v.([]interface{})
+				for _, value := range values {
+					idV := value.(map[string]interface{})
+					id := idV["key"]
+					ids = append(ids, id.(string))
+				}
+			}
+		}
+	}
+	return ids, nil
+}
+
+func buildTraceIdsQuery(params *datasource.TraceQueryParameters) (*esquery.SearchRequest, error) {
+	q, err := buildTraceQuery(params)
+	if err != nil {
+		return nil, err
+	}
+
+	aggs := esquery.TermsAgg("traceIDs", "TraceId.keyword").Order(map[string]string{"_count": "desc"})
+	if params.NumTraces > 0 {
+		aggs.Size(uint64(params.NumTraces))
+	} else {
+		aggs.Size(uint64(20))
+	}
+
+	return q.Aggs(aggs), nil
+}
+
 // Build the request body.
-func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchRequest, error) {
+func buildTraceQuery(params *datasource.TraceQueryParameters) (*esquery.SearchRequest, error) {
 	// boolean search query
 	q := esquery.Search()
 	boolQ := esquery.Bool()
 	if params.ServiceName != "" {
-		boolQ.Must(esquery.Term("Resource.service.name", params.ServiceName))
+		boolQ.Must(esquery.Term("Resource.service.name.keyword", params.ServiceName))
 	}
 	if params.OperationName != "" {
-		boolQ.Must(esquery.Term("Name", params.OperationName))
+		boolQ.Must(esquery.Term("Name.keyword", params.OperationName))
 	}
 
 	if !params.StartTime.IsZero() && params.EndTime.IsZero() {
@@ -188,17 +254,7 @@ func buildTraceQuery(params *storage.TraceQueryParameters) (*esquery.SearchReque
 		}
 	}
 
-	//TODO: do not support duration filters.
-	//if params.DurationMin != nil {
-	//}
-
 	q.Query(boolQ)
-	if params.NumTraces > 0 {
-		q.Size(uint64(params.NumTraces))
-	} else {
-		q.Size(uint64(20))
-	}
-
 	return q, nil
 }
 
@@ -231,6 +287,10 @@ func DocumentsResourceSpansConvert(searchHits *client.SearchHits) (*v1_trace.Tra
 			switch k {
 			case "TraceId":
 				span.TraceId = []byte(v.(string))
+			case "TraceStatus":
+				statusCode, _ := v.(json.Number).Int64()
+				span.Status = &v1_trace.Status{Code: v1_trace.Status_StatusCode(statusCode)}
+				span.TraceState = v1_trace.Status_StatusCode_name[int32(statusCode)]
 			case "Name":
 				span.Name = v.(string)
 			case "EndTimestamp":
@@ -249,6 +309,8 @@ func DocumentsResourceSpansConvert(searchHits *client.SearchHits) (*v1_trace.Tra
 				span.ParentSpanId = []byte(v.(string))
 			case "SpanId":
 				span.SpanId = []byte(v.(string))
+			case "Kind":
+				span.Kind = v1_trace.Span_SpanKind(v1_trace.Span_SpanKind_value[v.(string)])
 			}
 
 			if strings.Contains(k, "Attributes.") {
@@ -279,4 +341,24 @@ func DocumentsResourceSpansConvert(searchHits *client.SearchHits) (*v1_trace.Tra
 		}
 	}
 	return &v1_trace.TracesData{ResourceSpans: rSpans}, nil
+}
+
+type TermsQuery struct {
+	field  string
+	values []string
+}
+
+func (q *TermsQuery) Map() map[string]interface{} {
+	return map[string]interface{}{
+		"terms": map[string]interface{}{
+			q.field: q.values,
+		},
+	}
+}
+
+func Terms(field string, values ...string) *TermsQuery {
+	return &TermsQuery{
+		field:  field,
+		values: values,
+	}
 }

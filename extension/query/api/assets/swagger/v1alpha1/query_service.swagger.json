@@ -109,7 +109,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1TracesData"
+              "$ref": "#/definitions/v1alpha1TracesData"
             }
           },
           "default": {
@@ -128,6 +128,13 @@
           },
           {
             "name": "query.operationName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "query.attributes",
+            "description": "This is a request variable of the map type. The query format is \"map_name[key]=value\", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age[\"bob\"]=18",
             "in": "query",
             "required": false,
             "type": "string"
@@ -184,7 +191,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1TracesData"
+              "$ref": "#/definitions/tracev1TracesData"
             }
           },
           "default": {
@@ -225,7 +232,8 @@
         "attributes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           },
           "description": "attributes is a collection of attribute key/value pairs on the event.\nAttribute keys MUST be unique (it is not allowed to have more than one\nattribute with the same key)."
         },
@@ -257,7 +265,8 @@
         "attributes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           },
           "description": "attributes is a collection of attribute key/value pairs on the link.\nAttribute keys MUST be unique (it is not allowed to have more than one\nattribute with the same key)."
         },
@@ -293,6 +302,34 @@
       "description": "- STATUS_CODE_UNSET: The default status.\n - STATUS_CODE_OK: The Span has been validated by an Application developer or Operator to \nhave completed successfully.\n - STATUS_CODE_ERROR: The Span contains an error.",
       "title": "For the semantics of status codes see\nhttps://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status"
     },
+    "TraceResourceProcess": {
+      "type": "object",
+      "properties": {
+        "process": {
+          "$ref": "#/definitions/v1alpha1Process"
+        }
+      }
+    },
+    "TraceTraceStatus": {
+      "type": "string",
+      "enum": [
+        "UNHEALTHY",
+        "HEALTHY"
+      ],
+      "default": "UNHEALTHY"
+    },
+    "commonv1KeyValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/v1AnyValue"
+        }
+      },
+      "description": "KeyValue is a key-value pair that is used to store Span attributes, Link\nattributes, etc."
+    },
     "googlerpcStatus": {
       "type": "object",
       "properties": {
@@ -306,6 +343,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }
@@ -333,6 +371,20 @@
         }
       },
       "description": "The Status type defines a logical error model that is suitable for different\nprogramming environments, including REST APIs and RPC APIs."
+    },
+    "tracev1TracesData": {
+      "type": "object",
+      "properties": {
+        "resourceSpans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ResourceSpans"
+          },
+          "description": "An array of ResourceSpans.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
+        }
+      },
+      "description": "TracesData represents the traces data that can be stored in a persistent storage,\nOR can be embedded by other protocols that transfer OTLP traces data but do\nnot implement the OTLP protocol.\n\nThe main difference between this message and collector protocol is that\nin this message there will not be any \"control\" or \"metadata\" specific to\nOTLP protocol.\n\nWhen new fields are added into this message, the OTLP request MUST be updated\nas well."
     },
     "v1AnyValue": {
       "type": "object",
@@ -370,6 +422,7 @@
         "values": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1AnyValue"
           },
           "description": "Array of values. The array may be empty (contain 0 elements)."
@@ -390,7 +443,8 @@
         "attributes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           }
         },
         "droppedAttributesCount": {
@@ -400,25 +454,14 @@
       },
       "description": "InstrumentationScope is a message representing the instrumentation scope information\nsuch as the fully qualified name and version."
     },
-    "v1KeyValue": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "value": {
-          "$ref": "#/definitions/v1AnyValue"
-        }
-      },
-      "description": "KeyValue is a key-value pair that is used to store Span attributes, Link\nattributes, etc."
-    },
     "v1KeyValueList": {
       "type": "object",
       "properties": {
         "values": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           },
           "description": "A collection of key/value pairs of key-value pairs. The list may be empty (may\ncontain 0 elements).\nThe keys MUST be unique (it is not allowed to have more than one\nvalue with the same key)."
         }
@@ -453,7 +496,8 @@
         "attributes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           },
           "description": "Additional attributes that describe the specific event occurrence. [Optional].\nAttribute keys MUST be unique (it is not allowed to have more than one\nattribute with the same key)."
         },
@@ -485,6 +529,7 @@
         "resourceLogs": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1ResourceLogs"
           },
           "description": "An array of ResourceLogs.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
@@ -498,7 +543,8 @@
         "attributes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           },
           "description": "Set of attributes that describe the resource.\nAttribute keys MUST be unique (it is not allowed to have more than one\nattribute with the same key)."
         },
@@ -520,6 +566,7 @@
         "scopeLogs": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1ScopeLogs"
           },
           "description": "A list of ScopeLogs that originate from a resource."
@@ -541,6 +588,7 @@
         "scopeSpans": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1ScopeSpans"
           },
           "description": "A list of ScopeSpans that originate from a resource."
@@ -562,6 +610,7 @@
         "logRecords": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1LogRecord"
           },
           "description": "A list of log records."
@@ -583,6 +632,7 @@
         "spans": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1Span"
           },
           "description": "A list of Spans that originate from an instrumentation scope."
@@ -669,7 +719,8 @@
         "attributes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/v1KeyValue"
+            "type": "object",
+            "$ref": "#/definitions/commonv1KeyValue"
           },
           "description": "\"/http/user_agent\": \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36\"\n    \"/http/server_latency\": 300\n    \"abc.com/myattribute\": true\n    \"abc.com/score\": 10.239\n\nThe OpenTelemetry API specification further restricts the allowed value types:\nhttps://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/README.md#attribute\nAttribute keys MUST be unique (it is not allowed to have more than one\nattribute with the same key).",
           "title": "attributes is a collection of key/value pairs. Note, global attributes\nlike server name can be set using the resource API. Examples of attributes:"
@@ -682,6 +733,7 @@
         "events": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/SpanEvent"
           },
           "description": "events is a collection of Event items."
@@ -694,6 +746,7 @@
         "links": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/SpanLink"
           },
           "description": "links is a collection of Links, which are references from this span to a span\nin the same or different trace."
@@ -710,19 +763,6 @@
       },
       "description": "A Span represents a single operation performed by a single component of the system.\n\nThe next available field id is 17."
     },
-    "v1TracesData": {
-      "type": "object",
-      "properties": {
-        "resourceSpans": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1ResourceSpans"
-          },
-          "description": "An array of ResourceSpans.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
-        }
-      },
-      "description": "TracesData represents the traces data that can be stored in a persistent storage,\nOR can be embedded by other protocols that transfer OTLP traces data but do\nnot implement the OTLP protocol.\n\nThe main difference between this message and collector protocol is that\nin this message there will not be any \"control\" or \"metadata\" specific to\nOTLP protocol.\n\nWhen new fields are added into this message, the OTLP request MUST be updated\nas well."
-    },
     "v1alpha1GetOperationsResponse": {
       "type": "object",
       "properties": {
@@ -735,15 +775,97 @@
       },
       "description": "Response object to get operation names."
     },
+    "v1alpha1KeyValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "vType": {
+          "$ref": "#/definitions/v1alpha1ValueType"
+        },
+        "vStr": {
+          "type": "string"
+        },
+        "vBool": {
+          "type": "boolean"
+        },
+        "vInt64": {
+          "type": "string",
+          "format": "int64"
+        },
+        "vFloat64": {
+          "type": "number",
+          "format": "double"
+        },
+        "vBinary": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "v1alpha1Process": {
+      "type": "object",
+      "properties": {
+        "serviceName": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alpha1KeyValue"
+          }
+        }
+      }
+    },
     "v1alpha1ResourcesData": {
       "type": "object",
       "properties": {
         "resources": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1Resource"
           },
           "description": "An array of ResourceMetrics.\nFor data coming from a single resource this array will typically contain\none element. Intermediary nodes that receive data from multiple origins\ntypically batch the data before forwarding further and in that case this\narray will contain multiple elements."
+        }
+      }
+    },
+    "v1alpha1Trace": {
+      "type": "object",
+      "properties": {
+        "processMap": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TraceResourceProcess"
+          }
+        },
+        "operationName": {
+          "type": "string"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "traceId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/TraceTraceStatus"
+        },
+        "spanCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "startTime": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string"
         }
       }
     },
@@ -788,6 +910,29 @@
         }
       },
       "description": "Query parameters to find traces.\nNote that some storage implementations do not guarantee the correct implementation of all parameters."
+    },
+    "v1alpha1TracesData": {
+      "type": "object",
+      "properties": {
+        "traces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1alpha1Trace"
+          }
+        }
+      }
+    },
+    "v1alpha1ValueType": {
+      "type": "string",
+      "enum": [
+        "STRING",
+        "BOOL",
+        "INT64",
+        "FLOAT64",
+        "BINARY"
+      ],
+      "default": "STRING"
     }
   }
 }

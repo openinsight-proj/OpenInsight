@@ -2,8 +2,8 @@ package query
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/clickhouse"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/es"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 )

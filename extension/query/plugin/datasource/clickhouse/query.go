@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 	"sort"
 	"strings"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
@@ -92,7 +93,7 @@ type TracesModel struct {
 	End                time.Time           `ch:"End"`
 }
 
-func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *storage.OperationsQueryParameters) ([]string, error) {
+func (q *ClickHouseQuery) GetOperations(ctx context.Context, query *datasource.OperationsQueryParameters) ([]string, error) {
 	var whereKeywordList []string
 	if query.ServiceName != "" {
 		whereKeywordList = append(whereKeywordList, fmt.Sprintf("ServiceName='%s'", query.ServiceName))
@@ -154,7 +155,7 @@ func (q *ClickHouseQuery) GetTrace(ctx context.Context, traceID string) (*v1_tra
 	return parseSpanResults(result), nil
 }
 
-func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.TraceQueryParameters) (*v1_trace.TracesData, error) {
+func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *datasource.TraceQueryParameters) (*v1alpha1.TracesData, error) {
 	sql, err := buildQuery(query, q.tracingTableName)
 	if err != nil {
 		return nil, err
@@ -164,8 +165,8 @@ func (q *ClickHouseQuery) SearchTraces(ctx context.Context, query *storage.Trace
 	if err = q.client.Select(ctx, &result, sql); err != nil {
 		return nil, err
 	}
-
-	return parseSpanResults(result), nil
+	// TODO: fix response
+	return nil, nil
 }
 
 func (q *ClickHouseQuery) SearchLogs(ctx context.Context) (*v1_logs.LogsData, error) {
@@ -175,7 +176,7 @@ func (q *ClickHouseQuery) GetLog(ctx context.Context) (*v1_logs.LogsData, error)
 	return nil, nil
 }
 
-func buildQuery(query *storage.TraceQueryParameters, tableName string) (string, error) {
+func buildQuery(query *datasource.TraceQueryParameters, tableName string) (string, error) {
 	var whereKeywordList []string
 	if query.ServiceName != "" {
 		whereKeywordList = append(whereKeywordList, fmt.Sprintf("a.ServiceName='%s'", query.ServiceName))

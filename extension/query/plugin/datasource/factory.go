@@ -1,4 +1,4 @@
-package storage
+package datasource
 
 import (
 	"go.uber.org/zap"
@@ -6,6 +6,6 @@ import (
 
 type Factory interface {
 	Initialize(logger *zap.Logger) error
-	// CreateSpanQuery creates a storage.Query.
+	// CreateSpanQuery creates a datasource.Query.
 	CreateSpanQuery() (Query, error)
 }

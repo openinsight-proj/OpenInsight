@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
@@ -81,7 +81,7 @@ func (f *Factory) CreatDefaultConfig(cfg *ClickhouseType) *ClickhouseType {
 	return cfg
 }
 
-func (f *Factory) CreateSpanQuery() (storage.Query, error) {
+func (f *Factory) CreateSpanQuery() (datasource.Query, error) {
 	return &ClickHouseQuery{
 		logger:           f.logger,
 		client:           f.client,

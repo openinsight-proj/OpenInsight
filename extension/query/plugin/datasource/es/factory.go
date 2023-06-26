@@ -2,7 +2,7 @@ package es
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	"go.uber.org/zap"
 	"io"
 )
@@ -39,7 +39,7 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 	return nil
 }
 
-func (f *Factory) CreateSpanQuery() (storage.Query, error) {
+func (f *Factory) CreateSpanQuery() (datasource.Query, error) {
 	return &ElasticsearchQuery{
 		client:       f.client,
 		SpanIndex:    f.cfg.TracesIndex,

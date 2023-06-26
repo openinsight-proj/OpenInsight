@@ -3,6 +3,7 @@ package es
 import (
 	"encoding/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -27,8 +28,17 @@ func mockSearchHits() *client.SearchHits {
 	}
 	return searchHits
 }
-func Test_DocumentsConvert(t *testing.T) {
+
+func TestDocumentsConvert(t *testing.T) {
 	tracesData, err := DocumentsResourceSpansConvert(mockSearchHits())
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(tracesData.ResourceSpans))
+}
+
+func TestDocumentsTracesConvert(t *testing.T) {
+	tracesData, err := DocumentsResourceSpansConvert(mockSearchHits())
+	require.NoError(t, err)
+	traces, err := datasource.DocumentsTracesConvert(tracesData)
+	require.NoError(t, err)
+	assert.Equal(t, "HTTP GET", traces.Traces[0].OperationName)
 }

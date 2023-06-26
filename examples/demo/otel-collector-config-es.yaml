@@ -1,0 +1,61 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      label1: value1
+  logging:
+  elasticsearch/trace:
+#    endpoints: [http://elasticsearch:9200]
+#    traces_index: otlp_spans
+    endpoints: [ "http://172.16.201.1:30141" ]
+    traces_index: "otlp_spans-alias"
+    user: elastic
+    password: 8QZJ656ax3TXZqQh205l3Ee0
+processors:
+  batch:
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+  query:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:18888
+      grpc:
+        endpoint: 0.0.0.0:18889
+    storage:
+#      elasticsearch:
+#        endpoints: [ "http://elasticsearch:9200" ]
+#        traces_index: otlp-spans
+      elasticsearch:
+        endpoints: [ "http://172.16.201.1:30141" ]
+        traces_index: "otlp_spans-alias"
+        user: elastic
+        password: 8QZJ656ax3TXZqQh205l3Ee0
+    tracing_query:
+      storage_type: elasticsearch
+    logging_query:
+      storage_type: elasticsearch
+    metrics_query:
+      storage_type: elasticsearch
+
+service:
+  extensions: [pprof, zpages, query, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, elasticsearch/trace]

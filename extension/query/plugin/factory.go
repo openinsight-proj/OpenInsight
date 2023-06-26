@@ -2,9 +2,9 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/clickhouse"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/storage/es"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/clickhouse"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/es"
 	"go.uber.org/zap"
 )
 
@@ -30,11 +30,11 @@ type FactoryConfig struct {
 	//TODO: add others
 }
 type Factory struct {
-	factories map[string]storage.Factory
+	factories map[string]datasource.Factory
 	sConfig   *FactoryConfig
 }
 
-func (f *Factory) getFactoryOfType(factoryType string) (storage.Factory, error) {
+func (f *Factory) getFactoryOfType(factoryType string) (datasource.Factory, error) {
 	switch factoryType {
 	//TODO: refactoring
 	case elasticsearchQueryType:
@@ -59,7 +59,7 @@ func NewFactory(cfg *FactoryConfig) (*Factory, error) {
 	if cfg.MetricsQuery.StorageType != "" {
 		uniqueTypes = append(uniqueTypes, cfg.MetricsQuery.StorageType)
 	}
-	f.factories = make(map[string]storage.Factory)
+	f.factories = make(map[string]datasource.Factory)
 
 	for _, t := range uniqueTypes {
 		ff, err := f.getFactoryOfType(t)
@@ -82,7 +82,7 @@ func (f *Factory) Initialize(logger *zap.Logger) error {
 	return nil
 }
 
-func (f *Factory) CreateSpanQuery() (storage.Query, error) {
+func (f *Factory) CreateSpanQuery() (datasource.Query, error) {
 	factory, ok := f.factories[f.sConfig.TracingQuery.StorageType]
 	if !ok {
 		return nil, fmt.Errorf("no %s backend registered for span store", f.sConfig.TracingQuery.StorageType)
