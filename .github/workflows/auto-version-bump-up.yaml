@@ -17,6 +17,9 @@
 name: version-bump-up-dispatch
 
 on:
+  schedule:
+    # each day
+    - cron: "0 20 * * *"
   workflow_dispatch:
     inputs:
       jobType:
