@@ -174,7 +174,7 @@ def pushToOpeninsight(newManifest, newReadme, newCbility):
     #                                 'create {}'.format(cbilityFile),
     #                                 newCbility,
     #                                 branchName)
-    openinsightRepo.create_pull('[upsteam] Bump up otel col contrib to v{}'.format(latestVersion), prBodyTemplate, 'main',
+    openinsightRepo.create_pull('[upstream] Bump up otel col contrib to v{}'.format(latestVersion), prBodyTemplate, 'main',
                                 branchName, True)
 
 
