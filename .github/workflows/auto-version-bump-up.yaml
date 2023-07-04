@@ -14,30 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: version-bump-up-dispatch
+name: auto-version-bump-up
 
 on:
   schedule:
     # each day
     - cron: "0 20 * * *"
   workflow_dispatch:
-    inputs:
-      jobType:
-        description: 'job'
-        required: true
-        default: 'upstream'
-        type: choice
-        options:
-          - upstream
-          - local
-      strategy:
-        description: 'strategy'
-        required: true
-        default: 'remind'
-        type: choice
-        options:
-          - remain
-          - sync
 
 env:
   MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN_FOR_VERSION_BUMP_UP }}
@@ -68,4 +51,4 @@ jobs:
           echo $MY_GITHUB_TOKEN
           echo "Job: $JOB"
           echo "Strategy: $STRATEGY"
-          python .github/workflows/version-bump-up/version-bump-up.py --job $JOB --gomodSyncStrategy $STRATEGY
+          python .github/workflows/version-bump-up/version-bump-up.py
