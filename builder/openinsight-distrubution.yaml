@@ -3,5 +3,5 @@ extensions:
     path: "./extension/query"
 
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.71.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.80.1
     path: "./exporter/clickhouseexporter"
