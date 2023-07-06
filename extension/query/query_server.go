@@ -2,10 +2,11 @@ package query
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/handler"
-	"go.opentelemetry.io/collector/extension"
 	"net"
 	"net/http"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/handler"
+	"go.opentelemetry.io/collector/extension"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"

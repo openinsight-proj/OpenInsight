@@ -7,6 +7,9 @@
 package v1alpha1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/gogo/protobuf/gogoproto"
 	v12 "go.opentelemetry.io/proto/otlp/logs/v1"
 	v11 "go.opentelemetry.io/proto/otlp/resource/v1"
@@ -16,8 +19,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.uber.org/zap"

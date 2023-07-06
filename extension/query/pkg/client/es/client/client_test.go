@@ -1,13 +1,14 @@
 package client
 
 import (
-	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseBody(t *testing.T) {

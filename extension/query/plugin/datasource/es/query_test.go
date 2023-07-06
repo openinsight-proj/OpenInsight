@@ -2,11 +2,12 @@ package es
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func mockSearchHits() *client.SearchHits {

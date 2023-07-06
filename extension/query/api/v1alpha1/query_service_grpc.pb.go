@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	context "context"
+
 	v11 "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1 "go.opentelemetry.io/proto/otlp/trace/v1"
 	grpc "google.golang.org/grpc"

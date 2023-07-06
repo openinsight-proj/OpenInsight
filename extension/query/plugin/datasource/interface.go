@@ -2,6 +2,8 @@ package datasource
 
 import (
 	"context"
+	"time"
+
 	"github.com/elliotchance/orderedmap/v2"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
@@ -9,7 +11,6 @@ import (
 	v1_logs "go.opentelemetry.io/proto/otlp/logs/v1"
 	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
-	"time"
 )
 
 type Query interface {

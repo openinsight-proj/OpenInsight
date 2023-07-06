@@ -1,12 +1,13 @@
 package datasource
 
 import (
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	v1_common "go.opentelemetry.io/proto/otlp/common/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
-	"testing"
-	"time"
 )
 
 var (
