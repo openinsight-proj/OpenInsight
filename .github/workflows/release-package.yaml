@@ -35,7 +35,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       TAG: ${{ github.sha }}
     steps:
