@@ -148,7 +148,7 @@ def pushToOpeninsight(newManifest, newReadme, newCbility):
     # sha = branch.raw_data['object']['sha']
 
     openinsightRepo.update_file('builder/otelcol-builder.yaml',
-                                'update otelcol-builder.yaml to latest version',
+                                'update otelcol-builder.yaml to {0}'.format(latestVersion),
                                 dump(newManifest, Dumper=RoundTripDumper, width=float("inf")),
                                 openinsightRepo.get_contents('builder/otelcol-builder.yaml', ref).sha,
                                 branchName)
