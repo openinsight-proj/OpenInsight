@@ -8,6 +8,16 @@ receivers:
         cors:
           allowed_origins:
             - http://*
+
+connectors:
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [100us, 500us, 2ms, 4ms, 8ms, 10ms, 50ms, 100ms, 200ms, 500ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 30s, 60s]
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    metrics_flush_interval: 15s
+    dimensions_cache_size: 4000
+
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
@@ -15,12 +25,15 @@ exporters:
       label1: value1
   logging:
   elasticsearch/trace:
-#    endpoints: [http://elasticsearch:9200]
+    endpoints: [http://elasticsearch:9200]
 #    traces_index: otlp_spans
-    endpoints: [ "http://172.16.201.1:30141" ]
-    traces_index: "otlp_spans-alias"
-    user: elastic
-    password: 8QZJ656ax3TXZqQh205l3Ee0
+#    user: elastic
+#    password: 8QZJ656ax3TXZqQh205l3Ee0
+    mapping:
+      mode: jaeger
+    jaeger_index_alias:
+      span: jaeger-span-write
+      service: jaeger-service-write
 processors:
   batch:
 
@@ -28,34 +41,20 @@ extensions:
   health_check:
   pprof:
     endpoint: :1888
-  zpages:
-    endpoint: :55679
-  query:
-    protocols:
-      http:
-        endpoint: 0.0.0.0:18888
-      grpc:
-        endpoint: 0.0.0.0:18889
-    storage:
-#      elasticsearch:
-#        endpoints: [ "http://elasticsearch:9200" ]
-#        traces_index: otlp-spans
-      elasticsearch:
-        endpoints: [ "http://172.16.201.1:30141" ]
-        traces_index: "otlp_spans-alias"
-        user: elastic
-        password: 8QZJ656ax3TXZqQh205l3Ee0
-    tracing_query:
-      storage_type: elasticsearch
-    logging_query:
-      storage_type: elasticsearch
-    metrics_query:
-      storage_type: elasticsearch
 
 service:
-  extensions: [pprof, zpages, query, health_check]
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, elasticsearch/trace]
+      exporters: [spanmetrics, logging, elasticsearch/trace]
+    metrics:
+      # this pipeline handle otlp and span/graph metrics, remote write to prometheus(agent)
+      receivers:
+        - otlp
+        - spanmetrics
+      processors:
+        - batch
+      exporters:
+        - prometheus

@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/clickhouse"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource/es"

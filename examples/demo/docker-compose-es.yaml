@@ -18,6 +18,21 @@ services:
       memlock:
         soft: -1
         hard: -1
+  jaeger-query:
+    networks: [ es ]
+    image: docker.m.daocloud.io/jaegertracing/jaeger-query:1.47
+    ports:
+      - "16686:16686"
+    restart: always
+    environment:
+      - ES_SERVER_URLS=http://elasticsearch:9200
+      #- ES_USERNAME=elastic
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
+      - ES_USE_ALIASES=true
+      #- PROMETHEUS_SERVER_URL=http://172.16.180.1:31079/select/0/prometheus
+      #- PROMETHEUS_SERVER_URL=http://host.docker.internal:8428/select/0/prometheus
   # Collector
   openinsight:
     image: ${OTELCOL_IMG}

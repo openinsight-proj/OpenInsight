@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/aquasecurity/esquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/api/v1alpha1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
@@ -14,8 +17,6 @@ import (
 	v1_resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	v1_trace "go.opentelemetry.io/proto/otlp/trace/v1"
 	"go.uber.org/zap"
-	"strings"
-	"time"
 )
 
 var (

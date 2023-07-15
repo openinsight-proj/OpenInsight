@@ -1,10 +1,11 @@
 package es
 
 import (
+	"io"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/pkg/client/es/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/query/plugin/datasource"
 	"go.uber.org/zap"
-	"io"
 )
 
 var (

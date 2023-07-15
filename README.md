@@ -32,6 +32,11 @@ With OpenInsight, you can choose different storage databases for different data 
 
 **Our aim is to extend and not to replace the OpenTelemetry Collector.**
 
+# Features
+- OpenInsight is Jaeger, Zipkin, Kafka, OpenCensus and OpenTelemetry compatible.
+
+![jaeger-com](./docs/architecture/jaeger/img.png)
+
 # Scenarios
 ## 1. Clickhouse
 You only choose Clickhouse for Logging & Tracing & Metrics store.

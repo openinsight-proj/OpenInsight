@@ -47,7 +47,8 @@ exporters:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.81.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.81.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.81.0
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.81.0
+- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.80.1
+  path: "./exporter/elasticsearchexporter"
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.81.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.81.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.81.0
