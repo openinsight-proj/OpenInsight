@@ -31,6 +31,7 @@ services:
       - METRICS_STORAGE_TYPE=prometheus
       - PROMETHEUS_SERVER_URL=http://prometheus:9090
       - ES_USE_ALIASES=true
+      - PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR=true
       #- PROMETHEUS_SERVER_URL=http://172.16.180.1:31079/select/0/prometheus
       #- PROMETHEUS_SERVER_URL=http://host.docker.internal:8428/select/0/prometheus
   # Collector
