@@ -78,7 +78,7 @@ exporters:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.82.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.82.0
   path: ./exporter/clickhouseexporter
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.80.1
+- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.82.0
   path: ./exporter/elasticsearchexporter
 processors:
 - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.82.0
