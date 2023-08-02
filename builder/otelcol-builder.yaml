@@ -76,7 +76,7 @@ exporters:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.82.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.82.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.82.0
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.80.1
+- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.82.0
   path: ./exporter/clickhouseexporter
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.80.1
   path: ./exporter/elasticsearchexporter
