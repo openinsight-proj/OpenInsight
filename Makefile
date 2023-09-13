@@ -40,7 +40,7 @@ all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 TOOLS_MOD_DIR := ./internal/tools
-.PHONY: install-tools
+.PHONY: install-builder-tools
 install-builder-tools:
 	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 

@@ -40,7 +40,7 @@ jobs:
         run: make -j2 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+        run: make install-builder-tools
   lint-matrix:
     strategy:
       matrix:
@@ -184,6 +184,6 @@ jobs:
         run: make -j2 gomoddownload
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+        run: make install-builder-tools
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} build-openinsight
