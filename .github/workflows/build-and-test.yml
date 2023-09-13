@@ -23,10 +23,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.8
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -52,10 +52,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: "~1.20.6"
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -96,7 +96,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["~1.21.1", "~1.20.8"] # 1.20 is interpreted as 1.2 without quotes
         group:
           - processor
           - exporter
@@ -164,9 +164,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.8
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
