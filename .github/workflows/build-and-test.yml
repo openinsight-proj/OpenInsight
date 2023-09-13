@@ -21,14 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.8
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -36,11 +36,11 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        #if: steps.go-cache.outputs.cache-hit != 'true'
+#        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        #if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+#        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-builder-tools
   lint-matrix:
     strategy:
       matrix:
@@ -50,14 +50,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: "~1.20.6"
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -65,11 +65,11 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        #if: steps.go-cache.outputs.cache-hit != 'true'
+#        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        #if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+#        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-builder-tools
       - name: Cache Lint Build
         uses: actions/cache@v3
         with:
@@ -78,7 +78,7 @@ jobs:
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
   lint:
-    if: ${{ always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
     needs: [setup-environment, lint-matrix]
     steps:
@@ -96,7 +96,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["~1.21.1", "~1.20.8"] # 1.20 is interpreted as 1.2 without quotes
         group:
           - processor
           - exporter
@@ -134,7 +134,7 @@ jobs:
         run: make gotest GROUP=${{ matrix.group }}
   cross-compile:
     runs-on: ubuntu-latest
-    needs: [setup-environment,unittest-matrix, lint]
+    needs: [lint]
     strategy:
       matrix:
         os:
@@ -147,6 +147,10 @@ jobs:
           - arm
           - arm64
           - ppc64le
+        include:
+          - os: linux
+          - arch: arm
+          - arm: 7
         exclude:
           - os: darwin
             arch: 386
@@ -161,14 +165,14 @@ jobs:
           - os: windows
             arch: ppc64le
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.8
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -176,10 +180,10 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
+#        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+#        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-builder-tools
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} build-openinsight
