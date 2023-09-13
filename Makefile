@@ -44,22 +44,6 @@ TOOLS_MOD_DIR := ./internal/tools
 install-builder-tools:
 	GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 
-TOOLS_MOD_DIR := ./internal/tools
-.PHONY: install-tools
-install-tools: install-builder-tools
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jstemmer/go-junit-report
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
-
 # Build the Collector executable.
 .PHONY: build-openinsight
 build-openinsight:
