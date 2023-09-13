@@ -246,15 +246,18 @@ func TestExporter_PushEvent(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
+			han := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
+					configur := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
-						server := newESTestServer(t, handler(attempts))
 
-						testConfig := configurer(server.URL)
+						server := newESTestServer(t, han(attempts))
+
+						testConfig := configur(server.URL)
 						exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
 						mustSend(t, exporter, `{"message": "test1"}`)
 

@@ -236,15 +236,17 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
+			han := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
+					configur := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
-						server := newESTestServer(t, handler(attempts))
+						server := newESTestServer(t, han(attempts))
 
-						testConfig := configurer(server.URL)
+						testConfig := configur(server.URL)
 						exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
 						mustSendTraces(t, exporter, `{"message": "test1"}`)
 
