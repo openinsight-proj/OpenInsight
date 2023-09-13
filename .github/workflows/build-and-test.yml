@@ -134,7 +134,7 @@ jobs:
         run: make gotest GROUP=${{ matrix.group }}
   cross-compile:
     runs-on: ubuntu-latest
-    needs: [setup-environment,unittest-matrix, lint]
+    needs: [lint]
     strategy:
       matrix:
         os:
@@ -147,6 +147,10 @@ jobs:
           - arm
           - arm64
           - ppc64le
+        include:
+          - os: linux
+          - arch: arm
+          - arm: 7
         exclude:
           - os: darwin
             arch: 386
@@ -161,15 +165,14 @@ jobs:
           - os: windows
             arch: ppc64le
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: ~1.20.8
           cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
