@@ -1,4 +1,4 @@
-FROM golang:1.19 AS builder
+FROM golang:1.20 AS builder
 WORKDIR /build
 COPY . .
 RUN make install-builder-tools && make openinsight-linux
