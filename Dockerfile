@@ -1,7 +1,7 @@
 FROM golang:1.19 AS builder
 WORKDIR /build
 COPY . .
-RUN make install-tools && make openinsight-linux
+RUN make install-builder-tools && make openinsight-linux
 
 FROM alpine:3.13 as certs
 RUN apk --update add ca-certificates
