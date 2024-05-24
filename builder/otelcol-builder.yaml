@@ -30,8 +30,8 @@ extensions:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.101.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.101.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.101.0
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.1
-  path: ./extension/query
+#- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/query v0.0.1
+#  path: ./extension/query
 exporters:
 - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.101.0
 - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.101.0
@@ -78,10 +78,10 @@ exporters:
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.101.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.101.0
 - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.101.0
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.80.1
-  path: ./exporter/clickhouseexporter
-- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.80.1
-  path: ./exporter/elasticsearchexporter
+#- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.80.1
+#  path: ./exporter/clickhouseexporter
+#- gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.80.1
+#  path: ./exporter/elasticsearchexporter
 processors:
 - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.101.0
 - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.101.0
